@@ -63,7 +63,7 @@ const VideoTile = ({
       {showAvatar ? (
         <div className="video-tile__avatar">
           <div className={`video-tile__avatar-circle ${isLocal ? '' : 'video-tile__avatar-circle--remote'} ${
-            isSpeaking ? 'ring-4 ring-emerald-500/60 animate-pulse' : ''
+            isSpeaking ? 'ring-4 ring-sky-500/60 animate-pulse' : ''
           }`}>
             {initial}
           </div>
@@ -105,7 +105,7 @@ const VideoTile = ({
             <FiMicOff size={12} className="text-white" />
           </span>
         ) : isSpeaking ? (
-          <span className="video-tile__icon bg-emerald-600 animate-pulse" title="Speaking">
+          <span className="video-tile__icon bg-sky-600 animate-pulse" title="Speaking">
             <span className="w-2 h-2 rounded-full bg-white" />
           </span>
         ) : null}

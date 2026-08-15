@@ -131,12 +131,12 @@ const CalendarPage = () => {
                 <span>{selectedMeeting.date} • {selectedMeeting.startTime} - {selectedMeeting.endTime}</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-slate-500">
-                <FiShield size={14} className="text-emerald-500" />
-                <span>{selectedMeeting.securityLevel}</span>
+                <FiShield size={14} className="text-sky-500" />
+                <span>{selectedMeeting.securityLevel} • Recording {selectedMeeting.recording ? 'Enabled' : 'Disabled'}</span>
               </div>
               {selectedMeeting.participants && <p className="text-xs text-slate-400">Participants: {selectedMeeting.participants}</p>}
               {selectedMeeting.description && <p className="text-xs text-slate-400">{selectedMeeting.description}</p>}
-              <div className={`text-xs font-bold px-2 py-1 rounded-full inline-block ${selectedMeeting.status === 'completed' ? 'bg-gray-100 text-gray-600' : selectedMeeting.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-sky-100 text-sky-700'}`}>{selectedMeeting.status.toUpperCase()}</div>
+              <div className={`text-xs font-bold px-2 py-1 rounded-full inline-block ${selectedMeeting.status === 'completed' ? 'bg-gray-100 text-gray-600' : selectedMeeting.status === 'active' ? 'bg-sky-100 text-sky-700' : 'bg-sky-100 text-sky-700'}`}>{selectedMeeting.status.toUpperCase()}</div>
             </div>
             <div className="flex gap-2">
               {(selectedMeeting.status === 'scheduled' || selectedMeeting.status === 'active') && (

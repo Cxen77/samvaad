@@ -165,7 +165,7 @@ const JoinModal = ({ isOpen, onClose, onJoin }) => {
 
           {/* Security Notice */}
           <div className="flex items-center gap-2 text-xs text-slate-400 pt-2">
-            <FiShield size={12} className="text-emerald-500" />
+            <FiShield size={12} className="text-sky-500" />
             <span>End-to-end encrypted session</span>
           </div>
         </div>

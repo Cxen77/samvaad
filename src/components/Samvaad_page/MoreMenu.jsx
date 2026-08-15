@@ -146,7 +146,7 @@ const RecordingsTab = ({ fallbackData }) => {
                     </button>
                   )}
                 </div>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${r.status === 'processed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${r.status === 'processed' ? 'bg-sky-100 text-sky-700' : 'bg-amber-100 text-amber-700'}`}>
                   {r.status}
                 </span>
               </div>
@@ -163,7 +163,7 @@ const RecordingsTab = ({ fallbackData }) => {
                   title="Click to re-verify cryptographic hash against evidence ledger"
                 >
                   {r.integrityVerified ? (
-                    <FiCheckCircle size={14} className="text-emerald-500 shrink-0" />
+                    <FiCheckCircle size={14} className="text-sky-600 shrink-0" />
                   ) : (
                     <FiAlertCircle size={14} className="text-amber-500 shrink-0" />
                   )}
@@ -334,7 +334,7 @@ const DocumentsTab = ({ fallbackData }) => {
                   title="Click to re-verify cryptographic hash"
                 >
                   {d.verified ? (
-                    <span className="text-xs text-emerald-600 font-medium flex items-center gap-1">
+                    <span className="text-xs text-sky-600 font-medium flex items-center gap-1">
                       <FiCheckCircle size={12} />Verified
                     </span>
                   ) : (
@@ -423,7 +423,7 @@ const DecisionsTab = ({ fallbackData }) => {
                   <p className="text-sm font-semibold text-slate-800">{d.meetingTitle || 'Committee Decision'}</p>
                   {d.institute && <p className="text-xs text-slate-400">{d.institute}</p>}
                 </div>
-                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${d.decision === 'Approved' || d.decision === 'Approve' ? 'bg-emerald-100 text-emerald-700' : d.decision === 'Rejected' || d.decision === 'Reject' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
+                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${d.decision === 'Approved' || d.decision === 'Approve' ? 'bg-sky-100 text-sky-700' : d.decision === 'Rejected' || d.decision === 'Reject' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
                   {d.decision}
                 </span>
               </div>
@@ -432,7 +432,7 @@ const DecisionsTab = ({ fallbackData }) => {
               {d.verified && (
                 <button 
                   onClick={() => handleVerify(d)}
-                  className="mt-2 flex items-center gap-2 text-xs text-emerald-600 hover:text-emerald-700 transition-colors text-left"
+                  className="mt-2 flex items-center gap-2 text-xs text-sky-600 hover:text-sky-700 transition-colors text-left"
                   title="Click to verify cryptographic decision hash"
                 >
                   <FiShield size={12} />
@@ -487,8 +487,8 @@ const AuditTab = ({ fallbackData }) => {
   const actionColors = {
     LOGIN: 'bg-sky-100 text-sky-700',
     USER_LOGIN: 'bg-sky-100 text-sky-700',
-    MEETING_JOIN: 'bg-emerald-100 text-emerald-700',
-    USER_JOINED: 'bg-emerald-100 text-emerald-700',
+    MEETING_JOIN: 'bg-sky-100 text-sky-700',
+    USER_JOINED: 'bg-sky-100 text-sky-700',
     MEETING_SCHEDULED: 'bg-sky-100 text-sky-700',
     MEETING_CREATED: 'bg-sky-100 text-sky-700',
     MEETING_ENDED: 'bg-gray-100 text-gray-700',
@@ -498,12 +498,12 @@ const AuditTab = ({ fallbackData }) => {
     DOCUMENT_UPLOAD: 'bg-sky-100 text-sky-700',
     DOCUMENT_UPLOADED: 'bg-sky-100 text-sky-700',
     VOTE_CAST: 'bg-amber-100 text-amber-700',
-    VOTE_CLOSED: 'bg-emerald-100 text-emerald-700',
+    VOTE_CLOSED: 'bg-sky-100 text-sky-700',
     RECORDING_STARTED: 'bg-red-100 text-red-700',
     RECORDING_STOPPED: 'bg-slate-100 text-slate-700',
-    RECORDING_HASHED: 'bg-emerald-100 text-emerald-700',
+    RECORDING_HASHED: 'bg-sky-100 text-sky-700',
     BLOCKCHAIN_ANCHORED: 'bg-sky-100 text-sky-700',
-    INTEGRITY_VERIFIED: 'bg-emerald-100 text-emerald-700',
+    INTEGRITY_VERIFIED: 'bg-sky-100 text-sky-700',
     INTEGRITY_FAILED: 'bg-red-100 text-red-700',
   };
 
@@ -602,7 +602,7 @@ const SecurityTab = () => {
           title="Session Status" 
           value={securityData?.sessionEncryption?.status || "Active"} 
           subtitle={securityData?.sessionEncryption?.protocol || "Encrypted TLS 1.3"} 
-          color="text-emerald-600 bg-emerald-50" 
+          color="text-sky-600 bg-sky-50" 
         />
         <SecurityCard 
           icon={FiLock} 
@@ -616,7 +616,7 @@ const SecurityTab = () => {
           title="Recording Integrity" 
           value={securityData?.recordingIntegrity?.status || "Verified"} 
           subtitle={`${securityData?.recordingIntegrity?.total || 0} items in vault`} 
-          color="text-emerald-600 bg-emerald-50" 
+          color="text-sky-600 bg-sky-50" 
         />
         <SecurityCard 
           icon={FiActivity} 
@@ -654,7 +654,7 @@ const SecurityTab = () => {
           <div className="mt-3 p-3 bg-white rounded-lg border border-gray-200 text-xs">
             <div className="flex items-center gap-2 mb-2 font-semibold">
               {verificationResult.overallVerified ? (
-                <span className="text-emerald-600 flex items-center gap-1"><FiCheckCircle size={14} /> Complete Package Verified</span>
+                <span className="text-sky-600 flex items-center gap-1"><FiCheckCircle size={14} /> Complete Package Verified</span>
               ) : (
                 <span className="text-amber-600 flex items-center gap-1"><FiAlertCircle size={14} /> Verification Check Completed</span>
               )}

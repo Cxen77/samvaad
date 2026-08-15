@@ -123,7 +123,7 @@ const VotingPanel = ({
       <div className="panel-voting">
         <div className="panel-voting__header">
           <h3 className="panel-voting__title flex items-center gap-1.5">
-            <FiCheckCircle size={16} className="text-emerald-400" />
+            <FiCheckCircle size={16} className="text-sky-400" />
             <span>Vote Result Sealed</span>
           </h3>
           <span className="panel-voting__badge panel-voting__badge--closed">Closed</span>

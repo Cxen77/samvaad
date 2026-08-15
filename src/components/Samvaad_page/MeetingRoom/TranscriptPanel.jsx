@@ -212,7 +212,7 @@ const TranscriptPanel = ({
                 <ul className="space-y-1.5">
                   {aiSummary.actionItems.map((a, i) => (
                     <li key={i} className="text-sm text-slate-300">
-                      <span className="text-emerald-400">→</span> {a.task}
+                      <span className="text-sky-400">→</span> {a.task}
                       <span className="text-xs text-slate-500 ml-1.5">({a.assignee} • {a.deadline})</span>
                     </li>
                   ))}

@@ -92,7 +92,7 @@ const HubPage = () => {
       case 'Approved':
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
             Approved
           </span>
         );
@@ -630,7 +630,7 @@ const HubPage = () => {
                             }`}
                             title={doc.verified ? 'Click to unverify' : 'Click to verify document integrity'}
                           >
-                            {doc.verified ? <FiCheck size={12} className="text-emerald-500" /> : <FiAlertTriangle size={12} />}
+                            {doc.verified ? <FiCheck size={12} className="text-sky-500" /> : <FiAlertTriangle size={12} />}
                             <span>{doc.verified ? 'Verified' : 'Verify'}</span>
                           </button>
                           <button

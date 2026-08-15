@@ -31,11 +31,11 @@ const MeetingSummaryScreen = ({ meeting, session }) => {
           </div>
           <div className="summary-stat-box">
             <span className="summary-stat-label">Cloud Recording</span>
-            <span className="summary-stat-badge summary-stat-badge--emerald">Processed</span>
+            <span className="summary-stat-badge summary-stat-badge--sky">Processed</span>
           </div>
           <div className="summary-stat-box">
             <span className="summary-stat-label">Transcript</span>
-            <span className="summary-stat-badge summary-stat-badge--emerald">Available</span>
+            <span className="summary-stat-badge summary-stat-badge--sky">Available</span>
           </div>
         </div>
 
@@ -69,7 +69,7 @@ const MeetingSummaryScreen = ({ meeting, session }) => {
           </div>
           <div className="summary-blockchain-row">
             <span>Polygon Proof Status:</span>
-            <span className="text-emerald-400 font-bold">Anchored ✓</span>
+            <span className="text-sky-400 font-bold">Anchored ✓</span>
           </div>
         </div>
 

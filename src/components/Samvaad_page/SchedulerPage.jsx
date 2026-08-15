@@ -49,7 +49,7 @@ const SchedulerPage = () => {
 
   const statusColors = {
     scheduled: 'bg-sky-100 text-sky-700',
-    active: 'bg-emerald-100 text-emerald-700',
+    active: 'bg-sky-100 text-sky-700',
     completed: 'bg-gray-100 text-gray-600',
     cancelled: 'bg-red-100 text-red-600',
   };

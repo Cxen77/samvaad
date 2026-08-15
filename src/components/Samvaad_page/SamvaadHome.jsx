@@ -211,7 +211,7 @@ const SamvaadHome = () => {
 
         {/* Security Footer Note */}
         <div className="flex items-center justify-center gap-1.5 text-xs text-slate-400 dark:text-slate-500 pt-2 pb-4">
-          <FiShield size={12} className="text-emerald-500" />
+          <FiShield size={12} className="text-sky-500" />
           <span>Secure Session • End-to-End Encrypted</span>
         </div>
 

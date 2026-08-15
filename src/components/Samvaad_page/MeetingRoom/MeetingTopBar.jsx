@@ -31,7 +31,7 @@ const MeetingTopBar = ({
             title="Click to copy Meeting ID"
           >
             <span className="font-mono text-xs text-slate-300">{meeting.id}</span>
-            {copied ? <FiCheck size={12} className="text-emerald-400" /> : <FiCopy size={11} />}
+            {copied ? <FiCheck size={12} className="text-sky-400" /> : <FiCopy size={11} />}
           </button>
         </div>
       </div>

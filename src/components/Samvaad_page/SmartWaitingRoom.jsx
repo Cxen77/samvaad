@@ -238,7 +238,7 @@ const SmartWaitingRoom = () => {
                         <div>
                             <div className="flex items-center gap-2">
                                 <h1 className="text-lg md:text-xl font-bold text-white tracking-tight">{meeting.title || 'AICTE Hearing'}</h1>
-                                <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                                <span className="text-[10px] font-bold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded-full border border-sky-500/20">
                                     {meeting.securityLevel || 'Confidential'}
                                 </span>
                             </div>
@@ -356,7 +356,7 @@ const SmartWaitingRoom = () => {
                         <div className="space-y-3 bg-slate-900/90 border border-slate-800/90 rounded-2xl p-4">
                             <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-slate-800 pb-2 flex items-center justify-between">
                                 <span>Pre-flight Checks</span>
-                                <span className="text-[10px] text-emerald-400 font-semibold">Ready</span>
+                                <span className="text-[10px] text-sky-400 font-semibold">Ready</span>
                             </h2>
 
                             <div className="space-y-2 text-xs">
@@ -388,7 +388,7 @@ const SmartWaitingRoom = () => {
 
                             <div className="flex items-center justify-between text-xs">
                                 <span className="text-slate-400">Audio / Video:</span>
-                                <span className="font-semibold text-emerald-400 flex items-center gap-2">
+                                <span className="font-semibold text-sky-400 flex items-center gap-2">
                                     <span className="flex items-center gap-1">
                                         <FiVideo size={12} className="text-white" /> {isCameraOn ? 'Video ON' : 'Video OFF'}
                                     </span>
@@ -408,7 +408,7 @@ const SmartWaitingRoom = () => {
                             </button>
 
                             <p className="text-[10px] text-center text-slate-500 flex items-center justify-center gap-1">
-                                <FiLock size={11} className="text-emerald-500" /> DTLS-SRTP encryption & audit logging active.
+                                <FiLock size={11} className="text-sky-400" /> DTLS-SRTP encryption & audit logging active.
                             </p>
                         </div>
                     </div>
@@ -426,7 +426,7 @@ const CheckItem = ({ icon: Icon, label, status }) => (
         </div>
         <div>
             {status === 'pending' && <FiLoader className="animate-spin text-slate-400" size={14} />}
-            {status === 'passed' && <FiCheckCircle className="text-emerald-400" size={14} />}
+            {status === 'passed' && <FiCheckCircle className="text-sky-400" size={14} />}
             {status === 'failed' && <span className="text-red-400 text-xs font-semibold">Denied</span>}
         </div>
     </div>

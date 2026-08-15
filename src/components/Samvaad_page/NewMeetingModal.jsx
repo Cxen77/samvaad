@@ -603,7 +603,7 @@ Join Link: ${window.location.origin}/samvaad/waiting-room/${createdMeeting.id}`;
                                   <p className="text-[10px] text-slate-400">{user.role || 'Member'} • {user.college || user.email}</p>
                                 </div>
                               </div>
-                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${isAdded ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' : 'bg-sky-600 text-white'}`}>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${isAdded ? 'bg-sky-100 text-sky-700 dark:bg-sky-500/20 dark:text-sky-400' : 'bg-sky-600 text-white'}`}>
                                 {isAdded ? 'Added' : '+ Add'}
                               </span>
                             </div>
@@ -824,7 +824,7 @@ Join Link: ${window.location.origin}/samvaad/waiting-room/${createdMeeting.id}`;
             <div className="space-y-4 animate-in fade-in duration-200">
               <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3">
                 <div>
-                  <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-500/20 uppercase tracking-wider">
+                  <span className="text-[10px] font-bold text-sky-700 dark:text-sky-400 bg-sky-100 dark:bg-sky-500/10 px-2 py-0.5 rounded border border-sky-200 dark:border-sky-500/20 uppercase tracking-wider">
                     {createdMeeting.isInstant ? 'Instant Meeting Ready' : 'Meeting Scheduled'}
                   </span>
                   <h3 className="text-base font-bold text-slate-900 dark:text-white mt-1.5">{createdMeeting.title}</h3>
@@ -909,7 +909,7 @@ Join Link: ${window.location.origin}/samvaad/waiting-room/${createdMeeting.id}`;
         <div className="p-4 px-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex items-center justify-between shrink-0">
           {/* Subtle Security Indicator */}
           <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
-            <FiShield size={13} className="text-emerald-500 shrink-0" />
+            <FiShield size={13} className="text-sky-500 shrink-0" />
             <span>Secure session • DTLS-SRTP • Audit logged</span>
           </div>
 

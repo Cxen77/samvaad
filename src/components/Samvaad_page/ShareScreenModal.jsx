@@ -70,8 +70,8 @@ const ShareScreenModal = ({ isOpen, onClose }) => {
               </button>
 
               <button onClick={() => startSharing('window')} className="w-full flex items-center gap-4 p-4 border border-gray-200 rounded-xl hover:bg-sky-50 hover:border-sky-300 transition-all text-left group">
-                <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center group-hover:bg-emerald-200 transition-colors">
-                  <FiSquare size={24} className="text-emerald-600" />
+                <div className="w-12 h-12 rounded-xl bg-sky-100 flex items-center justify-center group-hover:bg-sky-200 transition-colors">
+                  <FiSquare size={24} className="text-sky-600" />
                 </div>
                 <div>
                   <p className="font-semibold text-slate-800">Window</p>
@@ -98,13 +98,13 @@ const ShareScreenModal = ({ isOpen, onClose }) => {
             </div>
           ) : (
             <div className="text-center space-y-5">
-              <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto">
-                <FiMonitor size={32} className="text-emerald-600" />
+              <div className="w-16 h-16 rounded-full bg-sky-100 flex items-center justify-center mx-auto">
+                <FiMonitor size={32} className="text-sky-600" />
               </div>
               <div>
                 <p className="font-semibold text-slate-800 text-lg">Sharing Your Screen</p>
-                <div className="flex items-center justify-center gap-2 text-emerald-600 text-sm mt-1">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <div className="flex items-center justify-center gap-2 text-sky-600 text-sm mt-1">
+                  <span className="w-2 h-2 rounded-full bg-sky-500 animate-pulse" />
                   Live
                 </div>
               </div>
