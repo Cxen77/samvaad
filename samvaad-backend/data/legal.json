@@ -1,0 +1,78 @@
+{
+  "privacy": {
+    "title": "Privacy Policy",
+    "lastUpdated": "2026-03-18",
+    "sections": [
+      {
+        "title": "1. Information We Collect",
+        "content": "We may collect: Account information (name, username, email), Event participation data, Attendance data (QR-based verification), and Device and usage data (logs, interactions)."
+      },
+      {
+        "title": "2. How We Use Information",
+        "content": "We use your data to: Provide and maintain the platform, Manage event participation and attendance, Improve performance and user experience, and Ensure platform security and prevent misuse."
+      },
+      {
+        "title": "3. Data Sharing",
+        "content": "We do not sell your personal data. Event organizers may access participant data only for events they manage. Data may be shared if required by law."
+      },
+      {
+        "title": "4. Data Security",
+        "content": "We implement industry-standard measures to protect your data, including secure authentication, encrypted communication, and signed QR payloads (no sensitive data exposed)."
+      },
+      {
+        "title": "5. Data Retention",
+        "content": "We retain data only as long as necessary to provide services and comply with legal obligations."
+      },
+      {
+        "title": "6. Your Rights",
+        "content": "You may: Update your information, Request account deletion, and Contact us regarding your data."
+      },
+      {
+        "title": "7. Changes to Policy",
+        "content": "We may update this policy. Continued use of the platform implies acceptance."
+      },
+      {
+        "title": "8. Contact",
+        "content": "support@fuseon.app"
+      }
+    ]
+  },
+  "terms": {
+    "title": "Terms of Service",
+    "lastUpdated": "2026-03-18",
+    "sections": [
+      {
+        "title": "1. Use of Service",
+        "content": "You must provide accurate account information. You are responsible for your account activity."
+      },
+      {
+        "title": "2. Event Participation",
+        "content": "Users may join and participate in events. Attendance may be tracked using QR-based systems."
+      },
+      {
+        "title": "3. Organizer Responsibilities",
+        "content": "Organizers manage event content and participants. Fuseon is not responsible for event outcomes or disputes."
+      },
+      {
+        "title": "4. Acceptable Use",
+        "content": "You agree NOT to: Attempt unauthorized access or exploit the system, Interfere with platform functionality, or Use fake QR codes or impersonate others."
+      },
+      {
+        "title": "5. Platform Availability",
+        "content": "We may modify or discontinue features at any time without notice."
+      },
+      {
+        "title": "6. Limitation of Liability",
+        "content": "Fuseon is provided 'as is' without warranties. We are not liable for damages arising from use of the platform."
+      },
+      {
+        "title": "7. Termination",
+        "content": "We may suspend or terminate accounts that violate these terms."
+      },
+      {
+        "title": "8. Changes to Terms",
+        "content": "We may update these terms. Continued use implies acceptance."
+      }
+    ]
+  }
+}
