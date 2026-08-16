@@ -113,7 +113,35 @@ function App() {
 
   return (
     <div className="h-screen bg-gray-50 text-gray-900 overflow-hidden">
-      <Toaster position="top-center" toastOptions={{ duration: 3000 }} containerStyle={{ zIndex: 99999 }} />
+      <Toaster 
+        position="top-center" 
+        toastOptions={{ 
+          duration: 3000,
+          style: {
+            background: '#0f172a',
+            color: '#f1f5f9',
+            border: '1px solid #334155',
+            borderRadius: '0.875rem',
+            padding: '0.625rem 1rem',
+            fontSize: '0.8125rem',
+            fontWeight: '500',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5)',
+          },
+          success: {
+            iconTheme: {
+              primary: '#0284c7',
+              secondary: '#ffffff',
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#ffffff',
+            },
+          },
+        }} 
+        containerStyle={{ zIndex: 99999 }} 
+      />
 
       <Suspense fallback={<PageLoader />}>
         <Routes>

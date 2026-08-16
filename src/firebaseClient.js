@@ -5,13 +5,13 @@ import { getStorage } from "firebase/storage";
 import { getMessaging } from "firebase/messaging";
 
 const firebaseConfig = {
-    apiKey: "REDACTED_API_KEY",
-    authDomain: "synapse-92325.firebaseapp.com",
-    projectId: "synapse-92325",
-    storageBucket: "synapse-92325.firebasestorage.app",
-    messagingSenderId: "476586267886",
-    appId: "1:476586267886:web:38e00b0cf82efafb768fff",
-    measurementId: "G-HC6SS7SV89"
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "synapse-92325.firebaseapp.com",
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "synapse-92325",
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "synapse-92325.firebasestorage.app",
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "476586267886",
+    appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:476586267886:web:38e00b0cf82efafb768fff",
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-HC6SS7SV89"
 };
 
 // Initialize Firebase

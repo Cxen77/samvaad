@@ -200,7 +200,7 @@ const BottomToolbar = ({ session }) => {
         {/* Leave / End Meeting Button */}
         <button
           onClick={() => setShowEndModal(true)}
-          className="toolbar-end-action-btn"
+          className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold text-xs transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-red-600/20 ml-1 shrink-0"
           title={isHost ? 'End Meeting' : 'Leave Meeting'}
         >
           <FiPhoneOff size={14} />

@@ -35,7 +35,8 @@ router.route('/rename').put(renameGroup);
 router.route('/groupadd').put(addToGroup);
 router.route('/groupremove').put(removeFromGroup);
 router.route('/leave').put(leaveGroup);
-router.route('/delete').put(deleteChat);
+router.route('/delete').put(deleteChat).post(deleteChat);
+router.route('/bulk-delete').put(deleteChat).post(deleteChat);
 
 router.get('/:chatId', getChatById);
 

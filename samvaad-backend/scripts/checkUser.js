@@ -6,7 +6,10 @@ dotenv.config();
 
 const checkUser = async () => {
     try {
-        await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/synapse');
+        if (!process.env.MONGO_URI) {
+            throw new Error('MONGO_URI is not configured in environment');
+        }
+        await mongoose.connect(process.env.MONGO_URI);
         console.log('Connected to MongoDB\n');
 
         const user = await User.findOne({ email: 'test@test.com' });

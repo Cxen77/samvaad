@@ -1,10 +1,11 @@
 import React from 'react';
-import { FiShield, FiLock, FiCopy, FiCheck, FiGrid, FiUser } from 'react-icons/fi';
+import { FiShield, FiLock, FiCopy, FiCheck, FiGrid, FiUser, FiSliders, FiInfo } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
 const MeetingTopBar = ({ 
   meeting, isRecording, recSeconds, formatRecTime, isRecPaused, 
-  isLocked, isMeetingSealed, layout, setLayout 
+  isLocked, isMeetingSealed, layout, setLayout,
+  activePanel, togglePanel, isPanelCollapsed, setIsPanelCollapsed
 }) => {
   const [copied, setCopied] = React.useState(false);
 
@@ -13,6 +14,13 @@ const MeetingTopBar = ({
     setCopied(true);
     toast.success('Meeting ID copied to clipboard');
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleOpenPanel = (panelId) => {
+    if (togglePanel) {
+      togglePanel(panelId);
+      if (setIsPanelCollapsed) setIsPanelCollapsed(false);
+    }
   };
 
   return (
@@ -60,36 +68,56 @@ const MeetingTopBar = ({
         </button>
       </div>
 
-      {/* Right: Security & Status Badges */}
-      <div className="topbar-right">
-        <span className="topbar-badge topbar-badge--secure" title="End-to-End Encrypted Session">
-          <FiLock size={11} />
+      {/* Right: Security, Status & Minimal Icon Tools */}
+      <div className="topbar-right flex items-center gap-3">
+        {/* Minimal Encrypted Indicator (No box, no border) */}
+        <span className="flex items-center gap-1 text-xs text-sky-400 font-medium" title="End-to-End Encrypted Session">
+          <FiLock size={12} />
           <span>Encrypted</span>
         </span>
 
-        <span className="topbar-badge topbar-badge--security">
-          {meeting.securityLevel || 'Confidential'}
-        </span>
-
         {isRecording && (
-          <div className="topbar-badge topbar-badge--recording">
-            <span className="topbar-rec-dot" />
+          <div className="flex items-center gap-1.5 text-xs text-red-400 font-medium">
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
             <span>REC {formatRecTime(recSeconds)}</span>
-            {isRecPaused && <span className="rec-paused font-bold">(PAUSED)</span>}
+            {isRecPaused && <span className="text-amber-400 font-bold">(PAUSED)</span>}
           </div>
         )}
 
         {isLocked && (
-          <span className="topbar-badge topbar-badge--locked">
-            <FiLock size={11} /> Locked
+          <span className="flex items-center gap-1 text-xs text-sky-400 font-medium">
+            <FiLock size={12} /> Locked
           </span>
         )}
 
         {isMeetingSealed && (
-          <span className="topbar-badge topbar-badge--sealed">
+          <span className="text-xs text-amber-400 font-medium">
             Sealed
           </span>
         )}
+
+        {/* Minimal Settings & Info Icons Only (No boxes, no text) */}
+        <div className="flex items-center gap-2 border-l border-slate-800/80 pl-2">
+          <button
+            onClick={() => handleOpenPanel('settings')}
+            className={`p-1 text-slate-400 hover:text-white transition-colors cursor-pointer ${
+              activePanel === 'settings' && !isPanelCollapsed ? 'text-sky-400' : ''
+            }`}
+            title="Meeting Settings"
+          >
+            <FiSliders size={16} />
+          </button>
+
+          <button
+            onClick={() => handleOpenPanel('info')}
+            className={`p-1 text-slate-400 hover:text-white transition-colors cursor-pointer ${
+              activePanel === 'info' && !isPanelCollapsed ? 'text-sky-400' : ''
+            }`}
+            title="Meeting Information"
+          >
+            <FiInfo size={16} />
+          </button>
+        </div>
       </div>
     </div>
   );

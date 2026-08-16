@@ -18,19 +18,10 @@ const usePushNotification = () => {
                 setPermission(currentPermission);
 
                 if (currentPermission === 'granted') {
-                    const token = await getToken(messaging, {
-                        vapidKey: 'BMD6p-idjLqX3s1Jd9tF_rB9jC-5m7s2t4l5nC8i_Z9x0oP2qR4sT6uV8wY0aB2cD4eF6gH8iJ0kL2mN4o' // Ideally this should be in env but often public for FCM
-                        // Note: User needs to provide their VAPID key if not already there, 
-                        // but usually firebase getting token works without it if using default config 
-                        // OR we assume standard setup. 
-                        // Wait, looking at `firebase-messaging-sw.js`, there is no VAPID key hardcoded except maybe implicitly in project config? 
-                        // Actually `getToken` usually requires a VAPID key in the options if not using default.
-                        // I will defer the VAPID key for a moment or use a placeholder/try without it first as it depends on project config.
-                        // A safer bet for "production ready" is to put it in env, but I don't have it.
-                        // I'll check if I can find it in the codebase or just use the generated one if present.
-                        // Actually, looking at `firebase-messaging-sw.js` (Step 103), it just uses `messaging()`.
-                        // I will add a method to just get token.
-                    });
+                    const tokenOptions = import.meta.env.VITE_FIREBASE_VAPID_KEY 
+                        ? { vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY } 
+                        : undefined;
+                    const token = await getToken(messaging, tokenOptions);
 
                     if (token) {
                         // Send to backend

@@ -733,7 +733,7 @@ export const useMeetingSession = () => {
       }
       setIsRecording(false);
       setIsRecPaused(false);
-      toast.success('Recording stopped. Encrypting & anchoring evidence...');
+      toast.loading('Saving & encrypting recording...', { id: 'rec-status' });
     } else {
       // START RECORDING
       try {
@@ -783,7 +783,7 @@ export const useMeetingSession = () => {
             });
 
             if (res.data?.success) {
-              toast.success('✓ Recording encrypted & anchored to blockchain ledger');
+              toast.success('Recording encrypted & anchored to ledger', { id: 'rec-status' });
               addAuditLog({
                 action: 'RECORDING_HASHED',
                 detail: `Recording for "${meeting.title}" anchored: ${res.data.recording?.sha256Hash?.slice(0, 16)}...`,
@@ -792,7 +792,7 @@ export const useMeetingSession = () => {
             }
           } catch (uploadErr) {
             console.error('Failed to upload recording:', uploadErr);
-            toast.error('Failed to upload recording to evidence vault');
+            toast.error('Failed to save recording', { id: 'rec-status' });
           }
         };
 
@@ -801,11 +801,11 @@ export const useMeetingSession = () => {
         setIsRecording(true);
         setRecSeconds(0);
         setIsRecPaused(false);
-        toast('🔴 Evidence Recording Started', { icon: '🔴' });
+        toast('Evidence Recording Started', { id: 'rec-status', icon: '🔴' });
         addAuditLog({ action: 'RECORDING_STARTED', detail: `Recording started for meeting ${roomId}`, meetingId: roomId });
       } catch (err) {
         console.error('Could not start recording:', err);
-        toast.error('Could not start recording: ' + err.message);
+        toast.error('Could not start recording: ' + err.message, { id: 'rec-status' });
       }
     }
   }, [isRecording, roomId, meeting, currentUser, participants, addAuditLog]);
@@ -815,11 +815,11 @@ export const useMeetingSession = () => {
     if (mediaRecorderRef.current.state === 'recording') {
       mediaRecorderRef.current.pause();
       setIsRecPaused(true);
-      toast('Recording paused', { icon: '⏸️' });
+      toast('Recording paused', { id: 'rec-status', icon: '⏸️' });
     } else if (mediaRecorderRef.current.state === 'paused') {
       mediaRecorderRef.current.resume();
       setIsRecPaused(false);
-      toast('Recording resumed', { icon: '▶️' });
+      toast('Recording resumed', { id: 'rec-status', icon: '▶️' });
     }
   }, []);
 

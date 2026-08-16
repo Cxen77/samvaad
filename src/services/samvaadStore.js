@@ -67,7 +67,7 @@ export const createMeeting = (meeting) => {
     requireApprovalToJoin: meeting.requireApprovalToJoin ?? true,
     
     // Security
-    securityLevel: meeting.securityLevel || 'Confidential',
+    securityLevel: meeting.securityLevel || 'Standard',
     waitingRoom: meeting.waitingRoom ?? true,
     hostApprovalRequired: meeting.hostApprovalRequired ?? true,
     participantPermissions: meeting.participantPermissions || {
@@ -184,7 +184,7 @@ export const getUpcomingMeetings = () => {
   return getMeetings().filter(m => m.date >= today && m.status === 'scheduled').sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
 };
 
-export const getCompletedMeetings = () => getMeetings().filter(m => m.status === 'completed');
+export const getCompletedMeetings = () => getMeetings().filter(m => m.status === 'completed' || m.status === 'ENDED');
 export const getCancelledMeetings = () => getMeetings().filter(m => m.status === 'cancelled');
 
 // =========================
@@ -615,11 +615,11 @@ export const seedIfNeeded = () => {
   const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
 
   const meetings = [
-    { id: 'AICTE-SEED-001', title: 'ABC Institute Approval Hearing', institute: 'ABC Institute of Technology', date: fmt(today), startTime: '10:30', endTime: '12:00', type: 'Hearing', participants: 'Dr. Rajesh Kumar, Dr. Priya Sharma, Dr. Amit Verma', description: 'Review application for new B.Tech AI & Data Science program.', securityLevel: 'Confidential', recording: true, status: 'scheduled', createdAt: new Date(today.getTime() - 86400000).toISOString() },
+    { id: 'AICTE-SEED-001', title: 'ABC Institute Approval Hearing', institute: 'ABC Institute of Technology', date: fmt(today), startTime: '10:30', endTime: '12:00', type: 'Hearing', participants: 'Dr. Rajesh Kumar, Dr. Priya Sharma, Dr. Amit Verma', description: 'Review application for new B.Tech AI & Data Science program.', securityLevel: 'Standard', recording: true, status: 'scheduled', createdAt: new Date(today.getTime() - 86400000).toISOString() },
     { id: 'AICTE-SEED-002', title: 'Global Institute Extension Review', institute: 'Global Institute of Technology', date: fmt(today), startTime: '14:00', endTime: '15:30', type: 'Review', participants: 'Dr. Priya Sharma, Dr. Sanjay Reddy', description: 'M.Tech Structural Engineering extension of approval.', securityLevel: 'Standard', recording: true, status: 'scheduled', createdAt: new Date(today.getTime() - 172800000).toISOString() },
-    { id: 'AICTE-SEED-003', title: 'National Pharmacy Preliminary Review', institute: 'National Pharmacy College', date: fmt(tomorrow), startTime: '11:00', endTime: '12:30', type: 'Preliminary', participants: 'Dr. Amit Verma, Dr. Meena Gupta', description: 'Preliminary review of D.Pharm program application.', securityLevel: 'Confidential', recording: true, status: 'scheduled', createdAt: new Date(today.getTime() - 86400000).toISOString() },
-    { id: 'AICTE-SEED-004', title: 'Rajiv Gandhi CSE Intake Committee', institute: 'Rajiv Gandhi Engineering College', date: fmt(dayAfter), startTime: '09:30', endTime: '11:00', type: 'Committee', participants: 'Dr. Rajesh Kumar, Dr. Sanjay Reddy, Dr. Priya Sharma', description: 'Committee decision on B.Tech CSE intake increase.', securityLevel: 'Highly Confidential', recording: true, status: 'scheduled', createdAt: new Date(today.getTime() - 259200000).toISOString() },
-    { id: 'AICTE-SEED-005', title: 'Delhi School MBA Final Decision', institute: 'Delhi School of Management', date: fmt(nextWeek), startTime: '15:00', endTime: '16:30', type: 'Decision', participants: 'Full Committee', description: 'Final vote on new MBA FinTech specialization.', securityLevel: 'Confidential', recording: true, status: 'scheduled', createdAt: new Date(today.getTime() - 345600000).toISOString() },
+    { id: 'AICTE-SEED-003', title: 'National Pharmacy Preliminary Review', institute: 'National Pharmacy College', date: fmt(tomorrow), startTime: '11:00', endTime: '12:30', type: 'Preliminary', participants: 'Dr. Amit Verma, Dr. Meena Gupta', description: 'Preliminary review of D.Pharm program application.', securityLevel: 'Standard', recording: true, status: 'scheduled', createdAt: new Date(today.getTime() - 86400000).toISOString() },
+    { id: 'AICTE-SEED-004', title: 'Rajiv Gandhi CSE Intake Committee', institute: 'Rajiv Gandhi Engineering College', date: fmt(dayAfter), startTime: '09:30', endTime: '11:00', type: 'Committee', participants: 'Dr. Rajesh Kumar, Dr. Sanjay Reddy, Dr. Priya Sharma', description: 'Committee decision on B.Tech CSE intake increase.', securityLevel: 'Standard', recording: true, status: 'scheduled', createdAt: new Date(today.getTime() - 259200000).toISOString() },
+    { id: 'AICTE-SEED-005', title: 'Delhi School MBA Final Decision', institute: 'Delhi School of Management', date: fmt(nextWeek), startTime: '15:00', endTime: '16:30', type: 'Decision', participants: 'Full Committee', description: 'Final vote on new MBA FinTech specialization.', securityLevel: 'Standard', recording: true, status: 'scheduled', createdAt: new Date(today.getTime() - 345600000).toISOString() },
     { id: 'AICTE-SEED-006', title: 'Eastern Architecture Review (Completed)', institute: 'Eastern Institute of Architecture', date: fmt(yesterday), startTime: '10:00', endTime: '11:30', type: 'Review', participants: 'Dr. Meena Gupta, Dr. Amit Verma', description: 'B.Arch new campus application review.', securityLevel: 'Standard', recording: true, status: 'completed', createdAt: new Date(today.getTime() - 604800000).toISOString() },
   ];
 

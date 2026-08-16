@@ -52,6 +52,10 @@ const SplitScreenRoom = () => {
         isMeetingSealed={session.isMeetingSealed}
         layout={session.layout}
         setLayout={session.setLayout}
+        activePanel={session.activePanel}
+        togglePanel={session.togglePanel}
+        isPanelCollapsed={session.isPanelCollapsed}
+        setIsPanelCollapsed={session.setIsPanelCollapsed}
       />
 
       {/* 2. CENTER STAGE (Video Canvas + Context Drawer) */}
@@ -74,7 +78,7 @@ const SplitScreenRoom = () => {
             {/* Dynamic Subtle Watermark */}
             {session.meetingSettings.watermarkEnabled && (
               <div ref={watermarkRef} className="watermark-overlay">
-                <span className="watermark-text text-slate-400">AICTE SAMVAAD • CONFIDENTIAL</span>
+                <span className="watermark-text text-slate-400">AICTE SAMVAAD</span>
                 <span className="watermark-subtext">USER: {session.currentUser?.email || 'OFFICIAL@AICTE.GOV.IN'}</span>
                 <span className="watermark-subtext">SESSION: {session.meeting.id}</span>
               </div>

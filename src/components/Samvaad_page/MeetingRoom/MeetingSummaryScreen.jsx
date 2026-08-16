@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiCheckCircle, FiCpu, FiAward, FiFileText, FiArrowLeft } from 'react-icons/fi';
+import { FiVideo, FiFileText, FiArrowLeft } from 'react-icons/fi';
 
 const MeetingSummaryScreen = ({ meeting, session }) => {
   const navigate = useNavigate();
@@ -10,13 +10,11 @@ const MeetingSummaryScreen = ({ meeting, session }) => {
   return (
     <div className="summary-screen">
       <div className="summary-card">
-        {/* Header */}
+        {/* Minimal Header (Zoom Style Video Icon) */}
         <div className="summary-header">
-          <div className="summary-icon">
-            <FiCheckCircle size={36} />
-          </div>
-          <h2 className="summary-title">Meeting Completed & Anchored</h2>
-          <p className="summary-subtitle">AICTE Samvaad Evidence & Governance Record</p>
+          <FiVideo size={28} className="text-slate-300 mx-auto mb-1" />
+          <h2 className="summary-title">Meeting Completed</h2>
+          <p className="summary-subtitle">Session details and record summary</p>
         </div>
 
         {/* Stats Grid */}
@@ -30,8 +28,8 @@ const MeetingSummaryScreen = ({ meeting, session }) => {
             <span className="summary-stat-value text-sky-400">{participantsCount}</span>
           </div>
           <div className="summary-stat-box">
-            <span className="summary-stat-label">Cloud Recording</span>
-            <span className="summary-stat-badge summary-stat-badge--sky">Processed</span>
+            <span className="summary-stat-label">Recording</span>
+            <span className="summary-stat-badge summary-stat-badge--sky">Saved</span>
           </div>
           <div className="summary-stat-box">
             <span className="summary-stat-label">Transcript</span>
@@ -39,37 +37,33 @@ const MeetingSummaryScreen = ({ meeting, session }) => {
           </div>
         </div>
 
-        {/* AI Summary Box */}
+        {/* Executive Summary Box */}
         <div className="summary-ai-box">
           <h4 className="summary-ai-title">
-            <FiCpu size={16} /> AI Hearing Executive Summary
+            <FiFileText size={16} /> Session Executive Summary
           </h4>
           <p className="summary-ai-text">
-            The committee evaluated {meeting.institute || 'the institute'} infrastructure and compliance ratio.
-            The laboratory setup meets AICTE standards for program approval.
+            The committee evaluated {meeting.institute || 'the institute'} compliance requirements and infrastructure readiness.
+            All agenda items were formally reviewed during this session.
           </p>
 
           {voteResult && (
             <div className="summary-ai-decision">
-              <span className="summary-ai-decision-label">Formal Committee Decision:</span>
+              <span className="summary-ai-decision-label">Committee Decision:</span>
               <span className="summary-ai-decision-value">{voteResult.decision} ({voteResult.decisionCount}/{voteResult.totalVotes} votes)</span>
             </div>
           )}
         </div>
 
-        {/* Blockchain Evidence Proof */}
-        <div className="summary-blockchain-box font-mono">
+        {/* Verification Proof */}
+        <div className="summary-blockchain-box font-mono text-xs">
           <div className="summary-blockchain-row">
-            <span>Evidence Record ID:</span>
+            <span>Session Reference:</span>
             <span className="text-white font-bold">{meeting.id}</span>
           </div>
           <div className="summary-blockchain-row">
-            <span>Audit Hash:</span>
-            <span className="text-amber-400 truncate max-w-[200px]">0x8b71a9c412f901...91ac</span>
-          </div>
-          <div className="summary-blockchain-row">
-            <span>Polygon Proof Status:</span>
-            <span className="text-sky-400 font-bold">Anchored ✓</span>
+            <span>Security Status:</span>
+            <span className="text-sky-400 font-bold">Encrypted & Verified ✓</span>
           </div>
         </div>
 
@@ -78,7 +72,7 @@ const MeetingSummaryScreen = ({ meeting, session }) => {
           onClick={() => navigate('/')}
           className="summary-return-btn"
         >
-          <FiArrowLeft size={16} /> Return to Samvaad Dashboard
+          <FiArrowLeft size={16} /> Return to Dashboard
         </button>
       </div>
     </div>

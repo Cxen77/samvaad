@@ -1,23 +1,32 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { FiHome, FiCalendar, FiMessageSquare, FiClock, FiGrid, FiMoreHorizontal, FiSettings, FiBell, FiSearch, FiX, FiUser, FiShield, FiLogOut, FiCheck } from 'react-icons/fi';
+import { 
+  FiHome, FiCalendar, FiMessageSquare, FiClock, FiGrid, 
+  FiMoreHorizontal, FiSettings, FiBell, FiSearch, FiX, 
+  FiUser, FiShield, FiLogOut, FiCheck, FiMenu 
+} from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
 import { useSamvaad } from '../../context/SamvaadContext';
 
 // ---- Sidebar Item ----
-const SidebarItem = ({ to, icon: Icon, label, end }) => (
+const SidebarItem = ({ to, icon: Icon, label, end, isExpanded }) => (
   <NavLink
     to={to}
     end={end}
+    title={label}
     className={({ isActive }) => `
-      flex flex-col items-center justify-center py-2.5 rounded-xl transition-colors duration-200 w-full relative group
+      flex items-center ${isExpanded ? 'justify-start px-3.5 gap-3' : 'justify-center'} h-11 w-full rounded-xl transition-all duration-200 relative group cursor-pointer
       ${isActive
         ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30'
         : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/80 dark:hover:text-white'}
     `}
   >
-    <Icon size={20} className="mb-1" />
-    <span className="text-[10px] font-semibold tracking-wider uppercase">{label}</span>
+    <Icon size={20} className="shrink-0" />
+    {isExpanded && (
+      <span className="text-xs font-semibold whitespace-nowrap overflow-hidden transition-all duration-200">
+        {label}
+      </span>
+    )}
   </NavLink>
 );
 
@@ -27,11 +36,26 @@ const SamvaadLayout = () => {
   const navigate = useNavigate();
 
   // Search
+  const [isMenuExpanded, setIsMenuExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const searchRef = useRef(null);
+  const searchInputRef = useRef(null);
   const searchResults = searchQuery.length >= 2 ? search(searchQuery) : null;
   const hasResults = searchResults && (searchResults.meetings.length > 0 || searchResults.institutes.length > 0 || searchResults.notes.length > 0);
+
+  // Global Ctrl+K handler (intercepts browser search and focuses Samvaad search)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        setSearchOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Notifications
   const [notifOpen, setNotifOpen] = useState(false);
@@ -81,21 +105,30 @@ const SamvaadLayout = () => {
           <span>Samvaad</span>
         </div>
 
-        {/* Search */}
-        <div className="flex-1 max-w-md mx-8 relative" ref={searchRef}>
-          <div className="relative">
-            <FiSearch size={16} strokeWidth={1.5} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+        {/* Search Bar (Enlarged & High Visibility) */}
+        <div className="flex-1 max-w-xl mx-4 md:mx-8 relative" ref={searchRef}>
+          <div className="relative flex items-center">
+            <FiSearch 
+              size={18} 
+              strokeWidth={2} 
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-sky-600 dark:text-sky-400 pointer-events-none" 
+            />
             <input
+              ref={searchInputRef}
               type="text"
               value={searchQuery}
               onChange={e => { setSearchQuery(e.target.value); setSearchOpen(true); }}
               onFocus={() => setSearchOpen(true)}
               placeholder="Search meetings, institutes, notes..."
-              className="w-full bg-slate-100 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 rounded-full py-2 pl-11 pr-8 text-sm outline-none focus:bg-white dark:focus:bg-slate-800 focus:ring-1 focus:ring-sky-500 border border-slate-200/60 dark:border-slate-700/60 transition-all shadow-sm"
+              className="w-full bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-xl py-2.5 pl-12 pr-10 text-sm font-medium outline-none focus:bg-white dark:focus:bg-black focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 border border-slate-200 dark:border-slate-800 transition-all shadow-xs"
             />
             {searchQuery && (
-              <button onClick={() => { setSearchQuery(''); setSearchOpen(false); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
-                <FiX size={14} />
+              <button 
+                onClick={() => { setSearchQuery(''); setSearchOpen(false); }} 
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                title="Clear search"
+              >
+                <FiX size={16} />
               </button>
             )}
           </div>
@@ -217,18 +250,32 @@ const SamvaadLayout = () => {
 
       <div className="flex flex-1 overflow-hidden">
         {/* Left Sidebar */}
-        <div className="w-[76px] bg-white dark:bg-[#080d1a] flex flex-col items-center py-2 shrink-0 z-50 border-r border-slate-200 dark:border-slate-800 transition-colors">
+        <div className={`${isMenuExpanded ? 'w-[190px]' : 'w-[60px]'} bg-white dark:bg-[#080d1a] flex flex-col py-3 shrink-0 z-50 border-r border-slate-200 dark:border-slate-800 transition-all duration-200`}>
           <div className="flex flex-col gap-2 w-full px-2">
-            <SidebarItem to="/" icon={FiHome} label="Home" end />
-            <SidebarItem to="/calendar" icon={FiCalendar} label="Calendar" />
-            <SidebarItem to="/chat" icon={FiMessageSquare} label="Chat" />
-            <SidebarItem to="/scheduler" icon={FiClock} label="Scheduler" />
-            <SidebarItem to="/hub" icon={FiGrid} label="Hub" />
-            <SidebarItem to="/more" icon={FiMoreHorizontal} label="More" />
+            {/* Menu Open/Close Button above Home */}
+            <button
+              onClick={() => setIsMenuExpanded(!isMenuExpanded)}
+              className={`flex items-center ${isMenuExpanded ? 'justify-start px-3.5 gap-3' : 'justify-center'} h-10 w-full rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all duration-200 cursor-pointer mb-1`}
+              title={isMenuExpanded ? "Close menu" : "Open menu"}
+            >
+              <FiMenu size={18} className="shrink-0" />
+              {isMenuExpanded && (
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                  Close Menu
+                </span>
+              )}
+            </button>
+
+            <SidebarItem to="/" icon={FiHome} label="Home" isExpanded={isMenuExpanded} end />
+            <SidebarItem to="/calendar" icon={FiCalendar} label="Calendar" isExpanded={isMenuExpanded} />
+            <SidebarItem to="/chat" icon={FiMessageSquare} label="Chat" isExpanded={isMenuExpanded} />
+            <SidebarItem to="/scheduler" icon={FiClock} label="Scheduler" isExpanded={isMenuExpanded} />
+            <SidebarItem to="/hub" icon={FiGrid} label="Hub" isExpanded={isMenuExpanded} />
+            <SidebarItem to="/more" icon={FiMoreHorizontal} label="More" isExpanded={isMenuExpanded} />
           </div>
 
           <div className="mt-auto flex flex-col gap-2 w-full px-2 mb-2">
-            <SidebarItem to="/settings" icon={FiSettings} label="Settings" />
+            <SidebarItem to="/settings" icon={FiSettings} label="Settings" isExpanded={isMenuExpanded} />
           </div>
         </div>
 

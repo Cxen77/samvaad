@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiSliders, FiMessageSquare, FiMonitor, FiSmile, FiShield } from 'react-icons/fi';
+import { FiMessageSquare, FiMonitor, FiSmile, FiShield, FiSliders } from 'react-icons/fi';
 
 const MeetingSettingsPanel = ({ meetingSettings, updateMeetingSettings, isHost }) => {
   const toggleSetting = (key) => {
@@ -8,91 +8,107 @@ const MeetingSettingsPanel = ({ meetingSettings, updateMeetingSettings, isHost }
   };
 
   return (
-    <div className="panel-settings">
-      <div className="panel-settings__header">
-        <h3 className="panel-settings__title flex items-center gap-1.5">
-          <FiSliders size={16} className="text-sky-400" />
-          <span>Meeting Settings</span>
-        </h3>
-        <p className="panel-settings__subtitle">
-          {isHost ? 'Manage in-session permissions' : 'Active meeting policies'}
+    <div className="space-y-5">
+      <div className="pb-1">
+        <p className="text-sm text-slate-400">
+          {isHost ? 'Configure in-session participant permissions and policies' : 'Active session security policies'}
         </p>
       </div>
 
-      <div className="panel-settings__group">
-        <h4 className="panel-settings__group-title">Participant Permissions</h4>
+      <div className="space-y-1">
+        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Participant Permissions</h4>
 
-        {/* Chat Toggle */}
-        <div className="panel-settings__toggle-row">
-          <div className="panel-settings__toggle-info">
-            <FiMessageSquare size={16} className="text-sky-400" />
-            <div>
-              <span className="panel-settings__toggle-label">Allow In-Meeting Chat</span>
-              <span className="panel-settings__toggle-desc">Members can send messages</span>
+        <div className="divide-y divide-slate-800/60">
+          {/* Chat Toggle Button */}
+          <div className="py-4 flex items-center justify-between">
+            <div className="flex items-center gap-3.5 min-w-0 pr-3">
+              <FiMessageSquare size={20} className={meetingSettings.chatEnabled ? 'text-sky-400 shrink-0' : 'text-slate-400 shrink-0'} />
+              <div className="min-w-0">
+                <span className="text-base font-semibold text-white block truncate">Allow In-Meeting Chat</span>
+                <span className="text-sm text-slate-400 block truncate">Members can send text and reactions</span>
+              </div>
             </div>
+            <button
+              onClick={() => toggleSetting('chatEnabled')}
+              disabled={!isHost}
+              className={`h-9 min-w-[6rem] px-4 rounded-xl text-sm font-semibold flex items-center justify-center text-center transition-all cursor-pointer shrink-0 disabled:opacity-50 ${
+                meetingSettings.chatEnabled
+                  ? 'bg-sky-600 hover:bg-sky-500 text-white shadow-xs'
+                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+              }`}
+            >
+              {meetingSettings.chatEnabled ? 'Allowed' : 'Disabled'}
+            </button>
           </div>
-          <button
-            onClick={() => toggleSetting('chatEnabled')}
-            disabled={!isHost}
-            className={`panel-settings__switch ${meetingSettings.chatEnabled ? 'panel-settings__switch--on' : ''}`}
-          >
-            <span className="panel-settings__switch-handle" />
-          </button>
-        </div>
 
-        {/* Screen Share Toggle */}
-        <div className="panel-settings__toggle-row">
-          <div className="panel-settings__toggle-info">
-            <FiMonitor size={16} className="text-sky-400" />
-            <div>
-              <span className="panel-settings__toggle-label">Allow Screen Sharing</span>
-              <span className="panel-settings__toggle-desc">Members can present screen</span>
+          {/* Screen Share Toggle Button */}
+          <div className="py-4 flex items-center justify-between">
+            <div className="flex items-center gap-3.5 min-w-0 pr-3">
+              <FiMonitor size={20} className={meetingSettings.screenShareEnabled ? 'text-sky-400 shrink-0' : 'text-slate-400 shrink-0'} />
+              <div className="min-w-0">
+                <span className="text-base font-semibold text-white block truncate">Allow Screen Sharing</span>
+                <span className="text-sm text-slate-400 block truncate">Members can present screen & documents</span>
+              </div>
             </div>
+            <button
+              onClick={() => toggleSetting('screenShareEnabled')}
+              disabled={!isHost}
+              className={`h-9 min-w-[6rem] px-4 rounded-xl text-sm font-semibold flex items-center justify-center text-center transition-all cursor-pointer shrink-0 disabled:opacity-50 ${
+                meetingSettings.screenShareEnabled
+                  ? 'bg-sky-600 hover:bg-sky-500 text-white shadow-xs'
+                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+              }`}
+            >
+              {meetingSettings.screenShareEnabled ? 'Allowed' : 'Disabled'}
+            </button>
           </div>
-          <button
-            onClick={() => toggleSetting('screenShareEnabled')}
-            disabled={!isHost}
-            className={`panel-settings__switch ${meetingSettings.screenShareEnabled ? 'panel-settings__switch--on' : ''}`}
-          >
-            <span className="panel-settings__switch-handle" />
-          </button>
-        </div>
 
-        {/* Reactions Toggle */}
-        <div className="panel-settings__toggle-row">
-          <div className="panel-settings__toggle-info">
-            <FiSmile size={16} className="text-sky-400" />
-            <div>
-              <span className="panel-settings__toggle-label">Allow Reactions</span>
-              <span className="panel-settings__toggle-desc">Members can send emoji reactions</span>
+          {/* Reactions Toggle Button */}
+          <div className="py-4 flex items-center justify-between">
+            <div className="flex items-center gap-3.5 min-w-0 pr-3">
+              <FiSmile size={20} className={meetingSettings.reactionsEnabled ? 'text-sky-400 shrink-0' : 'text-slate-400 shrink-0'} />
+              <div className="min-w-0">
+                <span className="text-base font-semibold text-white block truncate">Allow Reactions</span>
+                <span className="text-sm text-slate-400 block truncate">Members can send live emoji reactions</span>
+              </div>
             </div>
+            <button
+              onClick={() => toggleSetting('reactionsEnabled')}
+              disabled={!isHost}
+              className={`h-9 min-w-[6rem] px-4 rounded-xl text-sm font-semibold flex items-center justify-center text-center transition-all cursor-pointer shrink-0 disabled:opacity-50 ${
+                meetingSettings.reactionsEnabled
+                  ? 'bg-sky-600 hover:bg-sky-500 text-white shadow-xs'
+                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+              }`}
+            >
+              {meetingSettings.reactionsEnabled ? 'Allowed' : 'Disabled'}
+            </button>
           </div>
-          <button
-            onClick={() => toggleSetting('reactionsEnabled')}
-            disabled={!isHost}
-            className={`panel-settings__switch ${meetingSettings.reactionsEnabled ? 'panel-settings__switch--on' : ''}`}
-          >
-            <span className="panel-settings__switch-handle" />
-          </button>
         </div>
       </div>
 
-      <div className="panel-settings__group">
-        <h4 className="panel-settings__group-title">Security & Encryption</h4>
+      <div className="pt-2 space-y-2">
+        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Security & Encryption</h4>
 
-        <div className="panel-settings__policy-item">
-          <FiShield size={14} className="text-sky-400 shrink-0 mt-0.5" />
-          <div>
-            <span className="font-semibold text-slate-200 block text-xs">Per-Meeting Key Isolation</span>
-            <span className="text-[11px] text-slate-400 block">Messages and media encrypted with dynamic AES-256-GCM.</span>
+        <div className="divide-y divide-slate-800/60">
+          <div className="py-3.5 flex gap-3.5 items-start">
+            <FiShield size={18} className="text-slate-400 shrink-0 mt-0.5" />
+            <div>
+              <span className="font-semibold text-white block text-sm">Per-Meeting Key Isolation</span>
+              <span className="text-xs text-slate-400 block mt-0.5">
+                Messages and media are encrypted with dynamic authenticated AES-256-GCM keys.
+              </span>
+            </div>
           </div>
-        </div>
 
-        <div className="panel-settings__policy-item">
-          <FiShield size={14} className="text-sky-400 shrink-0 mt-0.5" />
-          <div>
-            <span className="font-semibold text-slate-200 block text-xs">Audit Logging Active</span>
-            <span className="text-[11px] text-slate-400 block">Entry, decisions, and attendance are immutably logged.</span>
+          <div className="py-3.5 flex gap-3.5 items-start">
+            <FiShield size={18} className="text-slate-400 shrink-0 mt-0.5" />
+            <div>
+              <span className="font-semibold text-white block text-sm">Audit Logging Active</span>
+              <span className="text-xs text-slate-400 block mt-0.5">
+                All participant joins, voting decisions, and recordings are permanently hash-chained.
+              </span>
+            </div>
           </div>
         </div>
       </div>

@@ -7,8 +7,12 @@ const dotenv = require('dotenv');
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
 // Configuration
-const API_URL = 'http://localhost:5000/api';
-const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://user:password@cluster.mongodb.net/synapse?retryWrites=true&w=majority';
+const API_URL = process.env.API_URL || 'http://localhost:5000/api';
+if (!process.env.MONGO_URI) {
+    console.error('❌ Error: MONGO_URI is not configured in environment.');
+    process.exit(1);
+}
+const MONGO_URI = process.env.MONGO_URI;
 
 const colors = {
     reset: "\x1b[0m",

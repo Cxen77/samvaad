@@ -2,17 +2,20 @@
 importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js');
 
-const firebaseConfig = {
-    apiKey: "REDACTED_API_KEY",
-    authDomain: "synapse-92325.firebaseapp.com",
-    projectId: "synapse-92325",
-    storageBucket: "synapse-92325.firebasestorage.app",
-    messagingSenderId: "476586267886",
-    appId: "1:476586267886:web:38e00b0cf82efafb768fff",
-    measurementId: "G-HC6SS7SV89"
-};
+const urlParams = new URLSearchParams(self.location.search);
+const apiKey = urlParams.get('apiKey');
 
-firebase.initializeApp(firebaseConfig);
+if (apiKey && !firebase.apps.length) {
+    firebase.initializeApp({
+        apiKey: apiKey,
+        authDomain: urlParams.get('authDomain') || "synapse-92325.firebaseapp.com",
+        projectId: urlParams.get('projectId') || "synapse-92325",
+        storageBucket: urlParams.get('storageBucket') || "synapse-92325.firebasestorage.app",
+        messagingSenderId: urlParams.get('messagingSenderId') || "476586267886",
+        appId: urlParams.get('appId') || "1:476586267886:web:38e00b0cf82efafb768fff",
+        measurementId: urlParams.get('measurementId') || "G-HC6SS7SV89"
+    });
+}
 
 const messaging = firebase.messaging();
 

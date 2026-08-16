@@ -13,20 +13,20 @@ import MeetingInfoPanel from './MeetingInfoPanel';
 import HostControlsPanel from './HostControlsPanel';
 import MeetingSettingsPanel from './MeetingSettingsPanel';
 
-const TABS = [
-  { id: 'chat', label: 'Chat', icon: FiMessageSquare },
-  { id: 'participants', label: 'People', icon: FiUsers },
-  { id: 'voting', label: 'Voting', icon: FiBarChart2 },
-  { id: 'dossier', label: 'Dossier', icon: FiFileText },
-  { id: 'transcript', label: 'AI Notes', icon: FiCpu },
-  { id: 'host', label: 'Host', icon: FiShield },
-  { id: 'settings', label: 'Settings', icon: FiSliders },
-  { id: 'info', label: 'Info', icon: FiInfo },
-];
+const PANEL_CONFIG = {
+  chat: { title: 'Meeting Chat', icon: FiMessageSquare },
+  participants: { title: 'Participants', icon: FiUsers },
+  voting: { title: 'Committee Voting', icon: FiBarChart2 },
+  dossier: { title: 'Dossier Documents', icon: FiFileText },
+  transcript: { title: 'AI Live Notes', icon: FiCpu },
+  host: { title: 'Host Controls', icon: FiShield },
+  settings: { title: 'Meeting Settings', icon: FiSliders },
+  info: { title: 'Meeting Information', icon: FiInfo },
+};
 
 const ContextPanel = ({ session }) => {
   const {
-    activePanel, togglePanel, isPanelCollapsed, setIsPanelCollapsed,
+    activePanel, isPanelCollapsed, setIsPanelCollapsed,
     meeting, currentUser, isHost, isMeetingSealed, chat,
     participants, muteParticipant, removeParticipant, muteAll, lowerParticipantHand,
     voteState, voteResult, hasVoted, myVote, startVote, castVote, closeVote,
@@ -48,37 +48,28 @@ const ContextPanel = ({ session }) => {
     );
   }
 
-  // Filter tabs if user is not host
-  const visibleTabs = TABS.filter(t => t.id !== 'host' || isHost);
+  const currentConfig = PANEL_CONFIG[activePanel] || { title: 'Panel', icon: FiInfo };
+  const CurrentIcon = currentConfig.icon;
 
   return (
     <div className="context-panel">
-      {/* Tab Header Bar */}
-      <div className="context-panel__tabs">
+      {/* Clean Panel Header */}
+      <div className="context-panel__tabs flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-950/70 shrink-0">
+        <div className="flex items-center gap-2.5">
+          <CurrentIcon className="text-sky-400 shrink-0" size={17} />
+          <h2 className="text-sm font-bold text-white tracking-wide">
+            {activePanel === 'participants' ? `Participants (${participants.length})` : currentConfig.title}
+          </h2>
+        </div>
+
         <button
           onClick={() => setIsPanelCollapsed(true)}
-          className="context-panel__collapse-btn"
+          className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors flex items-center gap-1 text-xs cursor-pointer"
           title="Close panel"
         >
-          <FiChevronRight size={16} />
+          <span className="text-[11px] text-slate-400 font-medium">Close</span>
+          <FiChevronRight size={15} />
         </button>
-
-        <div className="context-panel__tabs-scroll">
-          {visibleTabs.map(tab => {
-            const Icon = tab.icon;
-            const isActive = activePanel === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => togglePanel(tab.id)}
-                className={`context-panel__tab ${isActive ? 'context-panel__tab--active' : ''}`}
-              >
-                <Icon size={13} />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
-        </div>
       </div>
 
       {/* Scrollable Content Body */}

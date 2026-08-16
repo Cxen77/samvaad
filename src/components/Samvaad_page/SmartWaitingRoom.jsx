@@ -238,9 +238,6 @@ const SmartWaitingRoom = () => {
                         <div>
                             <div className="flex items-center gap-2">
                                 <h1 className="text-lg md:text-xl font-bold text-white tracking-tight">{meeting.title || 'AICTE Hearing'}</h1>
-                                <span className="text-[10px] font-bold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded-full border border-sky-500/20">
-                                    {meeting.securityLevel || 'Confidential'}
-                                </span>
                             </div>
                             <p className="text-xs text-slate-400">
                                 Meeting ID: <span className="font-mono text-slate-200 font-semibold">{roomId}</span>

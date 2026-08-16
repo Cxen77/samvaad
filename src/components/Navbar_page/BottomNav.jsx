@@ -21,23 +21,21 @@ const BottomNav = () => {
     ];
 
     return (
-        <div className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 px-4 py-2 md:hidden z-50 flex justify-between items-center pb-safe">
+        <div className="fixed bottom-0 left-0 w-full bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-4 py-2.5 md:hidden z-50 flex justify-between items-center pb-safe">
             {navItems.map((item) => (
                 <FeatureGate key={item.to} featureKey={item.featureKey} className="flex-1 max-w-[80px]">
                     <NavLink
                         to={item.to}
+                        title={item.label}
                         className={({ isActive }) =>
-                            `flex flex-col items-center justify-center gap-1 p-1 transition-all w-full h-full ${isActive
-                                ? "text-sky-600"
-                                : "text-gray-400 active:scale-90"
+                            `flex items-center justify-center p-2 rounded-xl transition-all w-full h-full ${isActive
+                                ? "text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40"
+                                : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 active:scale-90"
                             }`
                         }
                     >
                         {({ isActive }) => (
-                            <>
-                                {isActive ? <item.activeIcon className="w-6 h-6" /> : <item.icon className="w-6 h-6" />}
-                                <span className="text-[10px] font-medium tracking-tight">{item.label}</span>
-                            </>
+                            isActive ? <item.activeIcon className="w-6 h-6" /> : <item.icon className="w-6 h-6" />
                         )}
                     </NavLink>
                 </FeatureGate>

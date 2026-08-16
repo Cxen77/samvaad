@@ -607,24 +607,27 @@ export const leaveGroup = async (req, res) => {
     res.json({ message: "Left Group Successfully", chatId });
 };
 
-// @desc    Delete Chat (Hide from user)
+// @desc    Delete Chat (Hide from user) - supports single or bulk
 // @route   PUT /api/chat/delete
 // @access  Private
 export const deleteChat = async (req, res) => {
-    const { chatId } = req.body;
+    try {
+        const { chatId, chatIds } = req.body;
+        const targetIds = Array.isArray(chatIds) ? chatIds : (chatId ? [chatId] : []);
 
-    const hidden = await Chat.findByIdAndUpdate(
-        chatId,
-        { $addToSet: { deletedBy: req.user._id } },
-        { new: true }
-    );
+        if (!targetIds.length) {
+            return res.status(400).json({ message: "chatId or chatIds array is required" });
+        }
 
-    if (!hidden) {
-        res.status(404);
-        throw new Error("Chat Not Found");
+        await Chat.updateMany(
+            { _id: { $in: targetIds } },
+            { $addToSet: { deletedBy: req.user._id } }
+        );
+
+        res.json({ message: "Chat(s) Deleted (Hidden)", count: targetIds.length, chatIds: targetIds });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
-
-    res.json({ message: "Chat Deleted (Hidden)", chatId });
 };
 
 // ============================================================

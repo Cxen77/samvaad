@@ -14,45 +14,42 @@ const DocumentsPanel = ({ meeting }) => {
   };
 
   return (
-    <div className="panel-documents">
-      <div className="panel-documents__header">
-        <h3 className="panel-documents__title flex items-center gap-1.5">
-          <FiFileText size={16} className="text-sky-400" />
-          <span>Dossier Attachments</span>
-        </h3>
-        <p className="panel-documents__subtitle">Review committee compliance documents</p>
+    <div className="space-y-4">
+      <div className="pb-1">
+        <p className="text-sm text-slate-400">Review and verify committee compliance documents</p>
       </div>
 
-      <div className="panel-documents__list">
+      <div className="divide-y divide-slate-800/60">
         {documents.map(doc => (
-          <div key={doc.id || doc.fileName} className="panel-documents__card">
-            <div className="panel-documents__icon">
-              <FiFileText size={18} />
-            </div>
-            <div className="panel-documents__details min-w-0 pr-2">
-              <div className="panel-documents__filename-row flex items-center gap-1.5">
-                <span className="panel-documents__filename truncate">{doc.fileName}</span>
-                {doc.verified && (
-                  <span className="panel-documents__verified-badge shrink-0" title="Verified Document">
-                    <FiCheckCircle size={11} /> Verified
-                  </span>
+          <div key={doc.id || doc.fileName} className="py-4 flex items-center justify-between">
+            <div className="flex items-center gap-3.5 min-w-0 pr-3">
+              <FiFileText size={20} className="text-slate-400 shrink-0" />
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm font-semibold text-white truncate block">{doc.fileName}</span>
+                  {doc.verified && (
+                    <span className="text-xs text-sky-400 font-semibold flex items-center gap-0.5 shrink-0" title="Cryptographically Verified">
+                      <FiCheckCircle size={12} />
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-400 truncate mt-0.5">
+                  {doc.type} • {doc.size}
+                </p>
+                {doc.uploadedBy && (
+                  <p className="text-xs text-slate-500 truncate">
+                    Uploaded by: {doc.uploadedBy}
+                  </p>
                 )}
               </div>
-              <p className="panel-documents__meta truncate">
-                {doc.type} • {doc.size}
-              </p>
-              {doc.uploadedBy && (
-                <p className="panel-documents__uploader truncate">
-                  Uploaded by: {doc.uploadedBy}
-                </p>
-              )}
             </div>
+
             <button
               onClick={() => handleViewDoc(doc)}
-              className="panel-documents__view-btn shrink-0"
+              className="p-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
               title="Download Document"
             >
-              <FiDownload size={14} />
+              <FiDownload size={16} />
             </button>
           </div>
         ))}

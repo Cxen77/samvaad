@@ -16,7 +16,7 @@ const ScheduleModal = ({ isOpen, onClose }) => {
     type: 'Hearing',
     participants: '',
     description: '',
-    securityLevel: 'Confidential',
+    securityLevel: 'Standard',
     recording: true,
   });
 
@@ -29,7 +29,7 @@ const ScheduleModal = ({ isOpen, onClose }) => {
 
     createMeeting(form);
     toast.success(`Meeting "${form.title}" scheduled successfully!`);
-    setForm({ title: '', institute: '', date: new Date().toISOString().split('T')[0], startTime: '10:00', endTime: '11:00', type: 'Hearing', participants: '', description: '', securityLevel: 'Confidential', recording: true });
+    setForm({ title: '', institute: '', date: new Date().toISOString().split('T')[0], startTime: '10:00', endTime: '11:00', type: 'Hearing', participants: '', description: '', securityLevel: 'Standard', recording: true });
     onClose();
   };
 
@@ -89,27 +89,17 @@ const ScheduleModal = ({ isOpen, onClose }) => {
             </div>
           </div>
 
-          {/* Type + Security Row */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5"><FiFileText className="inline mr-1" size={14} />Meeting Type</label>
-              <select value={form.type} onChange={e => update('type', e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/40 bg-gray-50">
-                <option>Hearing</option>
-                <option>Review</option>
-                <option>Committee</option>
-                <option>Preliminary</option>
-                <option>Decision</option>
-                <option>General</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5"><FiShield className="inline mr-1" size={14} />Security Level</label>
-              <select value={form.securityLevel} onChange={e => update('securityLevel', e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/40 bg-gray-50">
-                <option>Standard</option>
-                <option>Confidential</option>
-                <option>Highly Confidential</option>
-              </select>
-            </div>
+          {/* Meeting Type */}
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5"><FiFileText className="inline mr-1" size={14} />Meeting Type</label>
+            <select value={form.type} onChange={e => update('type', e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/40 bg-gray-50">
+              <option>Hearing</option>
+              <option>Review</option>
+              <option>Committee</option>
+              <option>Preliminary</option>
+              <option>Decision</option>
+              <option>General</option>
+            </select>
           </div>
 
           {/* Participants */}

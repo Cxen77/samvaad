@@ -1,3 +1,11 @@
 node_modules
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+service-account*.json
+firebase-adminsdk*.json
+serviceAccountKey.json
 uploads
+
