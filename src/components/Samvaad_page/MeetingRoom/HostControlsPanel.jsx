@@ -8,10 +8,10 @@ const HostControlsPanel = ({
 }) => {
   if (!isHost) {
     return (
-      <div className="p-6 text-center text-slate-400">
+      <div className="p-6 text-center text-slate-500 dark:text-slate-400">
         <FiAlertTriangle size={28} className="text-slate-400 mb-2 mx-auto" />
-        <h3 className="text-base font-bold text-white">Host Controls Restricted</h3>
-        <p className="text-sm text-slate-400 mt-1">
+        <h3 className="text-base font-bold text-slate-900 dark:text-white">Host Controls Restricted</h3>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
           Only the session host can manage room security and participant policies.
         </p>
       </div>
@@ -21,21 +21,21 @@ const HostControlsPanel = ({
   return (
     <div className="space-y-4">
       <div className="pb-1">
-        <p className="text-sm text-slate-400">Manage room security, media policies, and recording</p>
+        <p className="text-sm text-slate-600 dark:text-slate-400">Manage room security, media policies, and recording</p>
       </div>
 
-      <div className="divide-y divide-slate-800/60">
+      <div className="divide-y divide-slate-200 dark:divide-slate-800/60">
         {/* 1. Lock Meeting */}
         <div className="py-4 flex items-center justify-between">
           <div className="flex items-center gap-3.5 min-w-0 pr-3">
             {isLocked ? (
-              <FiLock size={20} className="text-sky-400 shrink-0" />
+              <FiLock size={20} className="text-sky-600 dark:text-sky-400 shrink-0" />
             ) : (
               <FiUnlock size={20} className="text-slate-400 shrink-0" />
             )}
             <div className="min-w-0">
-              <span className="text-base font-semibold text-white block truncate">Lock Meeting</span>
-              <span className="text-sm text-slate-400 block truncate">Prevent new participants from joining</span>
+              <span className="text-base font-semibold text-slate-900 dark:text-white block truncate">Lock Meeting</span>
+              <span className="text-sm text-slate-500 dark:text-slate-400 block truncate">Prevent new participants from joining</span>
             </div>
           </div>
           <button
@@ -43,7 +43,7 @@ const HostControlsPanel = ({
             className={`h-9 min-w-[6rem] px-4 rounded-xl text-sm font-semibold flex items-center justify-center text-center transition-all cursor-pointer shrink-0 ${
               isLocked
                 ? 'bg-sky-600 hover:bg-sky-500 text-white shadow-xs'
-                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+                : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-300 border border-slate-300 dark:border-slate-700'
             }`}
           >
             {isLocked ? 'Locked' : 'Unlocked'}
@@ -55,8 +55,8 @@ const HostControlsPanel = ({
           <div className="flex items-center gap-3.5 min-w-0 pr-3">
             <FiMicOff size={20} className="text-slate-400 shrink-0" />
             <div className="min-w-0">
-              <span className="text-base font-semibold text-white block truncate">Mute All Participants</span>
-              <span className="text-sm text-slate-400 block truncate">Mute microphones of active members</span>
+              <span className="text-base font-semibold text-slate-900 dark:text-white block truncate">Mute All Participants</span>
+              <span className="text-sm text-slate-500 dark:text-slate-400 block truncate">Mute microphones of active members</span>
             </div>
           </div>
           <button
@@ -71,13 +71,13 @@ const HostControlsPanel = ({
         <div className="py-4 flex items-center justify-between">
           <div className="flex items-center gap-3.5 min-w-0 pr-3">
             {meetingSettings.watermarkEnabled ? (
-              <FiEye size={20} className="text-sky-400 shrink-0" />
+              <FiEye size={20} className="text-sky-600 dark:text-sky-400 shrink-0" />
             ) : (
               <FiEyeOff size={20} className="text-slate-400 shrink-0" />
             )}
             <div className="min-w-0">
-              <span className="text-base font-semibold text-white block truncate">Session Watermark</span>
-              <span className="text-sm text-slate-400 block truncate">Overlay participant identity on video canvas</span>
+              <span className="text-base font-semibold text-slate-900 dark:text-white block truncate">Session Watermark</span>
+              <span className="text-sm text-slate-500 dark:text-slate-400 block truncate">Overlay participant identity on video canvas</span>
             </div>
           </div>
           <button
@@ -85,7 +85,7 @@ const HostControlsPanel = ({
             className={`h-9 min-w-[6rem] px-4 rounded-xl text-sm font-semibold flex items-center justify-center text-center transition-all cursor-pointer shrink-0 ${
               meetingSettings.watermarkEnabled
                 ? 'bg-sky-600 hover:bg-sky-500 text-white shadow-xs'
-                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+                : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-300 border border-slate-300 dark:border-slate-700'
             }`}
           >
             {meetingSettings.watermarkEnabled ? 'Active' : 'Off'}
@@ -96,10 +96,10 @@ const HostControlsPanel = ({
         <div className="py-4 flex flex-col gap-3">
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-3.5 min-w-0 pr-3">
-              <FiRadio size={20} className={`shrink-0 ${isRecording && !isRecPaused ? 'text-sky-400 animate-pulse' : 'text-slate-400'}`} />
+              <FiRadio size={20} className={`shrink-0 ${isRecording && !isRecPaused ? 'text-sky-600 dark:text-sky-400 animate-pulse' : 'text-slate-400'}`} />
               <div className="min-w-0">
-                <span className="text-base font-semibold text-white block truncate">Evidence Recording</span>
-                <span className="text-sm text-slate-400 block truncate">
+                <span className="text-base font-semibold text-slate-900 dark:text-white block truncate">Evidence Recording</span>
+                <span className="text-sm text-slate-500 dark:text-slate-400 block truncate">
                   {isRecording ? (isRecPaused ? 'Recording paused' : 'Recording active') : 'Session not recorded'}
                 </span>
               </div>
@@ -118,10 +118,10 @@ const HostControlsPanel = ({
 
           {isRecording && (
             <div className="pt-2 flex items-center justify-between text-sm w-full pl-8">
-              <span className="text-slate-400">Recording controls:</span>
+              <span className="text-slate-500 dark:text-slate-400">Recording controls:</span>
               <button
                 onClick={toggleRecPause}
-                className="h-8 px-3.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+                className="h-8 px-3.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 {isRecPaused ? <FiPlay size={12} /> : <FiPause size={12} />}
                 <span>{isRecPaused ? 'Resume' : 'Pause'}</span>

@@ -85,7 +85,7 @@ export const initDirectCallSocket = (io, socket) => {
                 });
 
                 // Post system message in chat
-                const sysMsgText = callType === 'video' ? '📹 Missed video call (User busy)' : '📞 Missed voice call (User busy)';
+                const sysMsgText = callType === 'video' ? 'Missed video call (User busy)' : 'Missed voice call (User busy)';
                 const sysMsg = await Message.create({
                     chatId: conversationId,
                     senderId: userId,
@@ -119,7 +119,7 @@ export const initDirectCallSocket = (io, socket) => {
                     io.to(`user:${calleeId}`).emit('CALL_TIMEOUT', { callId, message: 'Missed call' });
 
                     // Post Chat Timeline System Message
-                    const missedText = callType === 'video' ? '📹 Missed video call' : '📞 Missed voice call';
+                    const missedText = callType === 'video' ? 'Missed video call' : 'Missed voice call';
                     const sysMsg = await Message.create({
                         chatId: conversationId,
                         senderId: userId,
@@ -218,7 +218,7 @@ export const initDirectCallSocket = (io, socket) => {
             io.to(`user:${call.callerId}`).emit('CALL_REJECTED', { callId, message: 'Call declined' });
 
             // Post System Message
-            const rejText = call.callType === 'video' ? '📹 Missed video call (Declined)' : '📞 Missed voice call (Declined)';
+            const rejText = call.callType === 'video' ? 'Missed video call (Declined)' : 'Missed voice call (Declined)';
             const sysMsg = await Message.create({
                 chatId: call.conversationId,
                 senderId: call.callerId,
@@ -325,8 +325,8 @@ export const initDirectCallSocket = (io, socket) => {
             });
 
             // Post Chat History Metadata Message
-            const callIcon = call.callType === 'video' ? '📹 Video call' : '📞 Voice call';
-            const callMsgText = `${callIcon} • ${formatDuration(duration)}`;
+            const callName = call.callType === 'video' ? 'Video call' : 'Voice call';
+            const callMsgText = `${callName} • ${formatDuration(duration)}`;
             const sysMsg = await Message.create({
                 chatId: call.conversationId,
                 senderId: userId,

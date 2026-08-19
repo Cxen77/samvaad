@@ -6,13 +6,13 @@ const LeaveEndModal = ({ isHost, onLeave, onEndAll, onClose }) => {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card" onClick={e => e.stopPropagation()}>
         {/* Minimal Icon with no red color */}
-        <div className="text-slate-300 flex justify-center mb-3">
+        <div className="text-slate-600 dark:text-slate-300 flex justify-center mb-3">
           <FiPhoneOff size={24} />
         </div>
-        <h3 className="modal-title text-base font-bold text-white text-center">
+        <h3 className="modal-title text-base font-bold text-slate-900 dark:text-white text-center">
           {isHost ? 'End or Leave Meeting' : 'Leave Meeting'}
         </h3>
-        <p className="modal-desc text-xs text-slate-400 text-center mt-1">
+        <p className="modal-desc text-xs text-slate-600 dark:text-slate-400 text-center mt-1">
           {isHost
             ? 'As host, you can leave the room or end the session for everyone.'
             : 'Are you sure you want to leave this meeting?'}
@@ -24,10 +24,10 @@ const LeaveEndModal = ({ isHost, onLeave, onEndAll, onClose }) => {
               End Meeting for All
             </button>
           )}
-          <button onClick={onLeave} className="w-full py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-semibold transition-all cursor-pointer">
+          <button onClick={onLeave} className="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold transition-all cursor-pointer">
             Leave Meeting
           </button>
-          <button onClick={onClose} className="w-full py-2 px-4 text-slate-400 hover:text-white text-xs font-medium transition-colors cursor-pointer mt-1">
+          <button onClick={onClose} className="w-full py-2 px-4 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white text-xs font-medium transition-colors cursor-pointer mt-1">
             Cancel
           </button>
         </div>

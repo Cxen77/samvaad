@@ -90,11 +90,11 @@ const TranscriptPanel = ({
   return (
     <div className="space-y-4">
       {/* Actions & Status */}
-      <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+      <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-slate-400">Speech Feed</span>
+          <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Speech Feed</span>
           {isTranscribing && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 text-[10px] font-bold">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/10 text-red-500 dark:text-red-400 border border-red-500/20 text-[10px] font-bold">
               <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
               LIVE
             </span>
@@ -103,14 +103,14 @@ const TranscriptPanel = ({
         <div className="flex items-center gap-1.5">
           <button 
             onClick={handleCopy} 
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors" 
+            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors" 
             title="Copy transcript"
           >
-            {copied ? <FiCheck size={13} className="text-sky-400" /> : <FiCopy size={13} />}
+            {copied ? <FiCheck size={13} className="text-sky-600 dark:text-sky-400" /> : <FiCopy size={13} />}
           </button>
           <button 
             onClick={handleExport} 
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors" 
+            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors" 
             title="Export as .txt"
           >
             <FiDownload size={13} />
@@ -135,8 +135,8 @@ const TranscriptPanel = ({
       <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1" ref={listRef}>
         {transcripts.length === 0 && !interimText ? (
           <div className="flex flex-col items-center justify-center py-12 text-slate-500 text-xs text-center px-4">
-            <FiMic size={32} className="mb-3 text-slate-700" />
-            <p className="font-semibold text-slate-300">No transcript entries yet</p>
+            <FiMic size={32} className="mb-3 text-slate-400 dark:text-slate-700" />
+            <p className="font-semibold text-slate-700 dark:text-slate-300">No transcript entries yet</p>
             <p className="text-slate-500 text-[11px] mt-1">
               Click "Start Live Transcription" to capture meeting speech in real-time.
             </p>
@@ -144,22 +144,22 @@ const TranscriptPanel = ({
         ) : (
           <>
             {transcripts.map(t => (
-              <div key={t.id} className="p-3 bg-slate-900/90 border border-slate-800 rounded-xl space-y-1">
+              <div key={t.id} className="p-3 bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-xl space-y-1">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-sky-400">{t.speaker}</span>
+                  <span className="font-semibold text-sky-600 dark:text-sky-400">{t.speaker}</span>
                   <span className="text-[10px] text-slate-500">{t.time}</span>
                 </div>
-                <p className="text-xs text-slate-200 leading-relaxed">{t.text}</p>
+                <p className="text-xs text-slate-800 dark:text-slate-200 leading-relaxed">{t.text}</p>
               </div>
             ))}
             {/* Interim (in-progress) text */}
             {interimText && (
-              <div className="p-3 bg-slate-900/50 border border-sky-500/20 rounded-xl space-y-1 opacity-80">
+              <div className="p-3 bg-sky-50/60 dark:bg-slate-900/50 border border-sky-500/20 rounded-xl space-y-1 opacity-80">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-slate-300">{currentUser?.name || 'You'}</span>
-                  <span className="text-[10px] text-sky-400 font-medium">listening...</span>
+                  <span className="font-semibold text-slate-700 dark:text-slate-300">{currentUser?.name || 'You'}</span>
+                  <span className="text-[10px] text-sky-600 dark:text-sky-400 font-medium">listening...</span>
                 </div>
-                <p className="text-xs text-slate-300 italic">{interimText}</p>
+                <p className="text-xs text-slate-700 dark:text-slate-300 italic">{interimText}</p>
               </div>
             )}
           </>
@@ -167,37 +167,37 @@ const TranscriptPanel = ({
       </div>
 
       {/* AI Summary Section */}
-      <div className="pt-2 border-t border-slate-800 space-y-2.5">
+      <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-2.5">
         <button
           onClick={showSummary && aiSummary ? () => setShowSummary(!showSummary) : handleGenerateSummary}
           disabled={isSummarizing}
-          className="w-full flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold text-slate-200 bg-slate-900/90 hover:bg-slate-800 border border-slate-800 rounded-xl transition-all disabled:opacity-50 cursor-pointer"
+          className="w-full flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-900/90 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl transition-all disabled:opacity-50 cursor-pointer"
         >
           {isSummarizing ? (
-            <><FiLoader size={14} className="animate-spin text-sky-400" /> Generating Summary...</>
+            <><FiLoader size={14} className="animate-spin text-sky-600 dark:text-sky-400" /> Generating Summary...</>
           ) : aiSummary ? (
-            <><FiZap size={14} className="text-amber-400" /> {showSummary ? 'Hide' : 'Show'} AI Hearing Summary</>
+            <><FiZap size={14} className="text-amber-500 dark:text-amber-400" /> {showSummary ? 'Hide' : 'Show'} AI Hearing Summary</>
           ) : (
-            <><FiZap size={14} className="text-amber-400" /> Generate AI Hearing Summary</>
+            <><FiZap size={14} className="text-amber-500 dark:text-amber-400" /> Generate AI Hearing Summary</>
           )}
         </button>
 
         {showSummary && aiSummary && (
-          <div className="space-y-2.5 p-3.5 bg-slate-900/90 border border-slate-800 rounded-xl text-xs">
+          <div className="space-y-2.5 p-3.5 bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-xl text-xs">
             {/* Summary */}
             <div className="space-y-1">
-              <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Executive Summary</h4>
-              <p className="text-xs text-slate-300 leading-relaxed">{aiSummary.summary}</p>
+              <h4 className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Executive Summary</h4>
+              <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">{aiSummary.summary}</p>
             </div>
 
             {/* Key Decisions */}
             {aiSummary.keyDecisions?.length > 0 && (
-              <div className="space-y-1 pt-2 border-t border-slate-800">
-                <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Key Decisions</h4>
+              <div className="space-y-1 pt-2 border-t border-slate-200 dark:border-slate-800">
+                <h4 className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Key Decisions</h4>
                 <ul className="space-y-1">
                   {aiSummary.keyDecisions.map((d, i) => (
-                    <li key={i} className="text-xs text-slate-300 flex items-start gap-1.5">
-                      <span className="text-sky-400 mt-0.5">•</span>
+                    <li key={i} className="text-xs text-slate-700 dark:text-slate-300 flex items-start gap-1.5">
+                      <span className="text-sky-600 dark:text-sky-400 mt-0.5">•</span>
                       <span>{d}</span>
                     </li>
                   ))}
@@ -207,12 +207,12 @@ const TranscriptPanel = ({
 
             {/* Action Items */}
             {aiSummary.actionItems?.length > 0 && (
-              <div className="space-y-1 pt-2 border-t border-slate-800">
-                <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Action Items</h4>
+              <div className="space-y-1 pt-2 border-t border-slate-200 dark:border-slate-800">
+                <h4 className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Action Items</h4>
                 <ul className="space-y-1">
                   {aiSummary.actionItems.map((a, i) => (
-                    <li key={i} className="text-xs text-slate-300">
-                      <span className="text-sky-400 font-bold">→</span> {a.task}
+                    <li key={i} className="text-xs text-slate-700 dark:text-slate-300">
+                      <span className="text-sky-600 dark:text-sky-400 font-bold">→</span> {a.task}
                       <span className="text-[11px] text-slate-500 ml-1">({a.assignee} • {a.deadline})</span>
                     </li>
                   ))}

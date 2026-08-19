@@ -95,7 +95,7 @@ const BottomToolbar = ({ session }) => {
           </button>
 
           {showReactions && (
-            <div className="absolute bottom-16 left-1/2 -translate-x-1/2 bg-slate-900 border border-slate-700 rounded-2xl p-1.5 shadow-2xl flex gap-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
+            <div className="absolute bottom-16 left-1/2 -translate-x-1/2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-1.5 shadow-2xl flex gap-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
               {QUICK_REACTIONS.map(emoji => (
                 <button
                   key={emoji}
@@ -103,7 +103,7 @@ const BottomToolbar = ({ session }) => {
                     sendReaction(emoji);
                     setShowReactions(false);
                   }}
-                  className="w-8 h-8 rounded-lg hover:bg-slate-800 flex items-center justify-center text-base transition-transform hover:scale-125"
+                  className="w-8 h-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-base transition-transform hover:scale-125 cursor-pointer"
                 >
                   {emoji}
                 </button>

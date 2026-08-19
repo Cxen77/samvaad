@@ -31,25 +31,25 @@ const MeetingTopBar = ({
           <FiShield size={15} />
         </div>
         <div className="topbar-info flex items-center gap-2">
-          <h1 className="topbar-meeting-title font-semibold text-slate-100">{meeting.title || 'AICTE Samvaad Hearing'}</h1>
-          <span className="topbar-divider">|</span>
+          <h1 className="topbar-meeting-title font-semibold text-slate-900 dark:text-slate-100">{meeting.title || 'AICTE Samvaad Hearing'}</h1>
+          <span className="topbar-divider text-slate-300 dark:text-slate-700">|</span>
           <button 
             onClick={handleCopyId}
-            className="topbar-meta-btn flex items-center gap-1.5 text-slate-400 hover:text-slate-200 transition-colors"
+            className="topbar-meta-btn flex items-center gap-1.5 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
             title="Click to copy Meeting ID"
           >
-            <span className="font-mono text-xs text-slate-300">{meeting.id}</span>
-            {copied ? <FiCheck size={12} className="text-sky-400" /> : <FiCopy size={11} />}
+            <span className="font-mono text-xs text-slate-700 dark:text-slate-300">{meeting.id}</span>
+            {copied ? <FiCheck size={12} className="text-sky-600 dark:text-sky-400" /> : <FiCopy size={11} />}
           </button>
         </div>
       </div>
 
       {/* Center: View Layout Switcher (Zoom Style) */}
-      <div className="topbar-center flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-xs">
+      <div className="topbar-center flex items-center bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-0.5 text-xs">
         <button
           onClick={() => setLayout('gallery')}
           className={`px-2.5 py-1 rounded-md font-medium transition-colors flex items-center gap-1.5 ${
-            layout === 'gallery' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'
+            layout === 'gallery' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs font-semibold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
           title="Gallery View"
         >
@@ -59,7 +59,7 @@ const MeetingTopBar = ({
         <button
           onClick={() => setLayout('speaker')}
           className={`px-2.5 py-1 rounded-md font-medium transition-colors flex items-center gap-1.5 ${
-            layout === 'speaker' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'
+            layout === 'speaker' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs font-semibold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
           title="Speaker View"
         >
@@ -71,37 +71,37 @@ const MeetingTopBar = ({
       {/* Right: Security, Status & Minimal Icon Tools */}
       <div className="topbar-right flex items-center gap-3">
         {/* Minimal Encrypted Indicator (No box, no border) */}
-        <span className="flex items-center gap-1 text-xs text-sky-400 font-medium" title="End-to-End Encrypted Session">
+        <span className="flex items-center gap-1 text-xs text-sky-600 dark:text-sky-400 font-medium" title="End-to-End Encrypted Session">
           <FiLock size={12} />
           <span>Encrypted</span>
         </span>
 
         {isRecording && (
-          <div className="flex items-center gap-1.5 text-xs text-red-400 font-medium">
+          <div className="flex items-center gap-1.5 text-xs text-red-500 dark:text-red-400 font-medium">
             <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
             <span>REC {formatRecTime(recSeconds)}</span>
-            {isRecPaused && <span className="text-amber-400 font-bold">(PAUSED)</span>}
+            {isRecPaused && <span className="text-amber-500 dark:text-amber-400 font-bold">(PAUSED)</span>}
           </div>
         )}
 
         {isLocked && (
-          <span className="flex items-center gap-1 text-xs text-sky-400 font-medium">
+          <span className="flex items-center gap-1 text-xs text-sky-600 dark:text-sky-400 font-medium">
             <FiLock size={12} /> Locked
           </span>
         )}
 
         {isMeetingSealed && (
-          <span className="text-xs text-amber-400 font-medium">
+          <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
             Sealed
           </span>
         )}
 
         {/* Minimal Settings & Info Icons Only (No boxes, no text) */}
-        <div className="flex items-center gap-2 border-l border-slate-800/80 pl-2">
+        <div className="flex items-center gap-2 border-l border-slate-200 dark:border-slate-800/80 pl-2">
           <button
             onClick={() => handleOpenPanel('settings')}
-            className={`p-1 text-slate-400 hover:text-white transition-colors cursor-pointer ${
-              activePanel === 'settings' && !isPanelCollapsed ? 'text-sky-400' : ''
+            className={`p-1 text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors cursor-pointer ${
+              activePanel === 'settings' && !isPanelCollapsed ? 'text-sky-600 dark:text-sky-400' : ''
             }`}
             title="Meeting Settings"
           >
@@ -110,8 +110,8 @@ const MeetingTopBar = ({
 
           <button
             onClick={() => handleOpenPanel('info')}
-            className={`p-1 text-slate-400 hover:text-white transition-colors cursor-pointer ${
-              activePanel === 'info' && !isPanelCollapsed ? 'text-sky-400' : ''
+            className={`p-1 text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors cursor-pointer ${
+              activePanel === 'info' && !isPanelCollapsed ? 'text-sky-600 dark:text-sky-400' : ''
             }`}
             title="Meeting Information"
           >

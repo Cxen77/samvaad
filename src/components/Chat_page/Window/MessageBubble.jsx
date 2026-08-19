@@ -1,6 +1,6 @@
 import { FaSmile } from "react-icons/fa";
 import { BsThreeDotsVertical } from "react-icons/bs";
-import { FiCheck } from "react-icons/fi";
+import { FiCheck, FiVideo, FiPhone, FiPhoneOff } from "react-icons/fi";
 import ReactionPicker from "./ReactionPicker";
 
 function MessageBubble({
@@ -13,12 +13,70 @@ function MessageBubble({
 }) {
   if (!msg) return null;
 
+  // Render message content, converting call emojis to icons without changing layout
+  const renderMessageContent = (text) => {
+    if (!text) return null;
+
+    if (
+      typeof text === 'string' &&
+      (text.includes('📹') ||
+        text.includes('📞') ||
+        msg.messageType === 'call' ||
+        text.toLowerCase().includes('video call') ||
+        text.toLowerCase().includes('voice call') ||
+        text.toLowerCase().includes('missed call'))
+    ) {
+      const isVideo = text.includes('📹') || text.toLowerCase().includes('video');
+      const isMissed =
+        text.toLowerCase().includes('missed') ||
+        text.toLowerCase().includes('declined') ||
+        text.toLowerCase().includes('busy');
+
+      // Strip any broken unicode replacement characters (), emoji surrogate fragments, or stray symbols
+      const callMatch = text.match(/(Voice call.*|Video call.*|Missed .*)/i);
+      const cleanText = callMatch
+        ? callMatch[1].trim()
+        : text.replace(/^[\uFFFD\uD800-\uDFFF\uFE0F\s?📹📞☎️📱]+/u, '').trim();
+
+      return (
+        <span className="inline-flex items-center gap-2 align-middle leading-none">
+          <span className="inline-flex items-center justify-center shrink-0 self-center">
+            {isVideo ? (
+              <FiVideo
+                className={
+                  isMissed
+                    ? 'text-red-400'
+                    : isMe
+                    ? 'text-white'
+                    : 'text-sky-600 dark:text-sky-400'
+                }
+                size={16}
+              />
+            ) : isMissed ? (
+              <FiPhoneOff className="text-red-400" size={16} />
+            ) : (
+              <FiPhone
+                className={
+                  isMe ? 'text-white' : 'text-sky-600 dark:text-sky-400'
+                }
+                size={16}
+              />
+            )}
+          </span>
+          <span className="leading-normal">{cleanText}</span>
+        </span>
+      );
+    }
+
+    return <span className="break-words">{text}</span>;
+  };
+
   // System messages render as centered notifications
   if (msg.messageType === 'system') {
     return (
       <div className="flex justify-center my-2">
         <div className="px-4 py-1.5 rounded-full bg-sky-50 dark:bg-sky-500/10 border border-sky-200 dark:border-sky-500/20 text-sky-500 dark:text-sky-300 text-xs font-medium text-center">
-          {msg.text}
+          {renderMessageContent(msg.text)}
         </div>
       </div>
     );
@@ -48,7 +106,7 @@ function MessageBubble({
               : "bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 rounded-bl-md border border-gray-200 dark:border-slate-700"
             }`}
         >
-          <span className="break-words">{msg.text}</span>
+          {renderMessageContent(msg.text)}
         </div>
 
         {/* REACTIONS UNDER BUBBLE */}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiX, FiMessageSquare, FiUserMinus, FiShield, FiCheckCircle, FiBriefcase, FiMail, FiAward } from 'react-icons/fi';
+import { FiX, FiMessageSquare, FiUserMinus, FiBriefcase, FiMail, FiAward } from 'react-icons/fi';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 
@@ -18,21 +18,27 @@ const ContactProfileModal = ({ isOpen, onClose, contactUser, onStartChat, onCont
   };
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[200] flex items-center justify-end p-0">
-      <div className="bg-slate-900 border-l border-slate-700 h-full max-w-md w-full p-6 shadow-2xl flex flex-col justify-between overflow-y-auto animate-in slide-in-from-right duration-200">
-        <div>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-[200] flex items-center justify-end p-0" onClick={onClose}>
+      <div 
+        className="bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white h-full max-w-md w-full p-6 shadow-2xl flex flex-col justify-between overflow-y-auto animate-in slide-in-from-right duration-200"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="space-y-6">
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-6">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Contact Details</span>
-            <button onClick={onClose} className="text-slate-400 hover:text-white p-1 rounded-lg">
+          <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Contact Details</span>
+            <button 
+              onClick={onClose} 
+              className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
+            >
               <FiX size={18} />
             </button>
           </div>
 
           {/* Profile Header Card */}
-          <div className="text-center space-y-3 mb-6">
-            <div className="w-20 h-20 rounded-full bg-sky-500/20 border-2 border-sky-500/40 flex items-center justify-center font-bold text-2xl text-sky-400 mx-auto overflow-hidden shadow-xl">
-              {contactUser.profilePic ? (
+          <div className="text-center space-y-3">
+            <div className="w-20 h-20 rounded-full bg-sky-100 text-sky-700 dark:bg-sky-950/80 dark:text-sky-300 font-bold text-2xl flex items-center justify-center mx-auto overflow-hidden border border-sky-200 dark:border-sky-800 shadow-md">
+              {contactUser.profilePic && !contactUser.profilePic.includes('placeholder') ? (
                 <img src={contactUser.profilePic} alt={contactUser.name} className="w-full h-full object-cover" />
               ) : (
                 contactUser.name?.[0]?.toUpperCase() || 'U'
@@ -40,75 +46,66 @@ const ContactProfileModal = ({ isOpen, onClose, contactUser, onStartChat, onCont
             </div>
 
             <div>
-              <h3 className="text-lg font-bold text-white flex items-center justify-center gap-2">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                 {contactUser.name}
               </h3>
-              <span className="text-xs text-sky-400 font-semibold">{contactUser.role || 'AICTE Member'}</span>
+              <p className="text-xs text-sky-600 dark:text-sky-400 font-semibold mt-0.5">
+                {contactUser.role || 'AICTE Member'}
+              </p>
             </div>
 
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-xs font-semibold text-emerald-400">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              {contactUser.statusMessage || contactUser.presenceStatus || 'Available'}
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-xs font-medium text-slate-700 dark:text-slate-300">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span>{contactUser.statusMessage || contactUser.presenceStatus || 'Active'}</span>
             </div>
-          </div>
-
-          {/* E2EE Status Card */}
-          <div className="p-4 bg-slate-800/80 rounded-2xl border border-slate-700/80 mb-6 space-y-2 text-xs">
-            <div className="flex items-center justify-between font-bold text-emerald-400">
-              <span className="flex items-center gap-1.5"><FiShield /> 🔐 E2EE Direct Chat Compatible</span>
-              <FiCheckCircle size={16} />
-            </div>
-            <p className="text-slate-300 leading-relaxed text-[11px]">
-              Direct messages with {contactUser.name} use client-side ECDH P-256 key exchange. Messages are encrypted locally in your browser before transmission.
-            </p>
           </div>
 
           {/* Metadata Section */}
-          <div className="space-y-4 text-xs">
+          <div className="space-y-3 text-xs">
             {contactUser.email && (
-              <div className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-xl border border-slate-800">
-                <FiMail size={16} className="text-slate-400 shrink-0" />
-                <div>
-                  <span className="text-[10px] text-slate-400 block">Official Email</span>
-                  <span className="font-semibold text-slate-200">{contactUser.email}</span>
+              <div className="flex items-center gap-3.5 p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-800">
+                <FiMail size={17} className="text-slate-500 dark:text-slate-400 shrink-0" />
+                <div className="min-w-0">
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium block uppercase tracking-wider">Official Email</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200 truncate block mt-0.5">{contactUser.email}</span>
                 </div>
               </div>
             )}
 
             {contactUser.college && (
-              <div className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-xl border border-slate-800">
-                <FiBriefcase size={16} className="text-slate-400 shrink-0" />
-                <div>
-                  <span className="text-[10px] text-slate-400 block">Organization / College</span>
-                  <span className="font-semibold text-slate-200">{contactUser.college}</span>
+              <div className="flex items-center gap-3.5 p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-800">
+                <FiBriefcase size={17} className="text-slate-500 dark:text-slate-400 shrink-0" />
+                <div className="min-w-0">
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium block uppercase tracking-wider">Organization / Institute</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200 truncate block mt-0.5">{contactUser.college}</span>
                 </div>
               </div>
             )}
 
-            <div className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-xl border border-slate-800">
-              <FiAward size={16} className="text-slate-400 shrink-0" />
-              <div>
-                <span className="text-[10px] text-slate-400 block">System Access Clearance</span>
-                <span className="font-semibold text-slate-200">AICTE Samvaad Verified Official</span>
+            <div className="flex items-center gap-3.5 p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-800">
+              <FiAward size={17} className="text-slate-500 dark:text-slate-400 shrink-0" />
+              <div className="min-w-0">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium block uppercase tracking-wider">Access Clearance</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200 truncate block mt-0.5">AICTE Samvaad Verified Official</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Footer Actions */}
-        <div className="space-y-2 pt-6 border-t border-slate-800">
+        <div className="space-y-2 pt-6 border-t border-slate-200 dark:border-slate-800">
           <button
             onClick={() => {
               onStartChat(contactUser);
               onClose();
             }}
-            className="w-full py-3 bg-sky-500 hover:bg-sky-500 text-white rounded-xl font-bold text-xs shadow-lg shadow-sky-900/40 flex items-center justify-center gap-2"
+            className="w-full py-2.5 bg-sky-600 hover:bg-sky-500 text-white rounded-xl font-bold text-xs shadow-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
           >
-            <FiMessageSquare size={16} /> Start Direct Chat
+            <FiMessageSquare size={15} /> Start Direct Chat
           </button>
           <button
             onClick={handleRemoveContact}
-            className="w-full py-2.5 bg-slate-800 hover:bg-red-500/20 text-slate-400 hover:text-red-400 rounded-xl text-xs font-semibold border border-slate-700 transition-colors flex items-center justify-center gap-2"
+            className="w-full py-2.5 bg-slate-100 hover:bg-red-50 hover:text-red-600 dark:bg-slate-800 dark:hover:bg-red-950/30 dark:hover:text-red-400 text-slate-600 dark:text-slate-400 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-700 transition-colors flex items-center justify-center gap-2 cursor-pointer"
           >
             <FiUserMinus size={14} /> Remove Contact
           </button>

@@ -54,20 +54,20 @@ const ContextPanel = ({ session }) => {
   return (
     <div className="context-panel">
       {/* Clean Panel Header */}
-      <div className="context-panel__tabs flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-950/70 shrink-0">
+      <div className="context-panel__tabs flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/70 shrink-0">
         <div className="flex items-center gap-2.5">
-          <CurrentIcon className="text-sky-400 shrink-0" size={17} />
-          <h2 className="text-sm font-bold text-white tracking-wide">
+          <CurrentIcon className="text-sky-600 dark:text-sky-400 shrink-0" size={17} />
+          <h2 className="text-sm font-bold text-slate-900 dark:text-white tracking-wide">
             {activePanel === 'participants' ? `Participants (${participants.length})` : currentConfig.title}
           </h2>
         </div>
 
         <button
           onClick={() => setIsPanelCollapsed(true)}
-          className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors flex items-center gap-1 text-xs cursor-pointer"
+          className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 transition-colors flex items-center gap-1 text-xs cursor-pointer"
           title="Close panel"
         >
-          <span className="text-[11px] text-slate-400 font-medium">Close</span>
+          <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Close</span>
           <FiChevronRight size={15} />
         </button>
       </div>

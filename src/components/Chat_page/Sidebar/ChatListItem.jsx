@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiUser, FiUsers, FiVideo, FiShield, FiCheck, FiTrash2, FiSquare, FiCheckSquare } from 'react-icons/fi';
+import { FiUser, FiUsers, FiVideo, FiPhone, FiShield, FiCheck, FiTrash2, FiSquare, FiCheckSquare } from 'react-icons/fi';
 
 function ChatListItem({ 
   chat, 
@@ -99,7 +99,23 @@ function ChatListItem({
         <div className="flex justify-between items-center mt-0.5">
           <p className="text-xs text-gray-500 dark:text-slate-400 truncate flex items-center gap-1">
             {chat.chatType === 'direct' && !isSelf && <FiShield size={10} className="text-gray-400 shrink-0" title="E2EE" />}
-            {lastMsg?.text || (isSelf ? "This is your personal space" : "No messages yet")}
+            {(() => {
+              const text = lastMsg?.text || (isSelf ? "This is your personal space" : "No messages yet");
+              if (typeof text === 'string' && (text.includes('📹') || text.includes('📞') || lastMsg?.messageType === 'call' || text.toLowerCase().includes('voice call') || text.toLowerCase().includes('video call') || text.toLowerCase().includes('missed call'))) {
+                const isVideo = text.includes('📹') || text.toLowerCase().includes('video');
+                const callMatch = text.match(/(Voice call.*|Video call.*|Missed .*)/i);
+                const cleanText = callMatch
+                  ? callMatch[1].trim()
+                  : text.replace(/^[\uFFFD\uD800-\uDFFF\uFE0F\s?📹📞☎️📱]+/u, '').trim();
+                return (
+                  <span className="inline-flex items-center gap-1 truncate align-middle">
+                    {isVideo ? <FiVideo size={12} className="shrink-0" /> : <FiPhone size={12} className="shrink-0" />}
+                    <span className="truncate">{cleanText}</span>
+                  </span>
+                );
+              }
+              return text;
+            })()}
           </p>
 
           {/* Single Delete Button on Hover (Teams/Zoom style) */}

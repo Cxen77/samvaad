@@ -12,7 +12,7 @@ const MeetingSummaryScreen = ({ meeting, session }) => {
       <div className="summary-card">
         {/* Minimal Header (Zoom Style Video Icon) */}
         <div className="summary-header">
-          <FiVideo size={28} className="text-slate-300 mx-auto mb-1" />
+          <FiVideo size={28} className="text-slate-600 dark:text-slate-300 mx-auto mb-1" />
           <h2 className="summary-title">Meeting Completed</h2>
           <p className="summary-subtitle">Session details and record summary</p>
         </div>
@@ -25,7 +25,7 @@ const MeetingSummaryScreen = ({ meeting, session }) => {
           </div>
           <div className="summary-stat-box">
             <span className="summary-stat-label">Participants</span>
-            <span className="summary-stat-value text-sky-400">{participantsCount}</span>
+            <span className="summary-stat-value text-sky-600 dark:text-sky-400">{participantsCount}</span>
           </div>
           <div className="summary-stat-box">
             <span className="summary-stat-label">Recording</span>
@@ -59,11 +59,11 @@ const MeetingSummaryScreen = ({ meeting, session }) => {
         <div className="summary-blockchain-box font-mono text-xs">
           <div className="summary-blockchain-row">
             <span>Session Reference:</span>
-            <span className="text-white font-bold">{meeting.id}</span>
+            <span className="text-slate-900 dark:text-white font-bold">{meeting.id}</span>
           </div>
           <div className="summary-blockchain-row">
             <span>Security Status:</span>
-            <span className="text-sky-400 font-bold">Encrypted & Verified ✓</span>
+            <span className="text-sky-600 dark:text-sky-400 font-bold">Encrypted & Verified ✓</span>
           </div>
         </div>
 
