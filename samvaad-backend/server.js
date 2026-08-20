@@ -63,7 +63,7 @@ const __dirname = path.dirname(__filename);
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
-    crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+    crossOriginOpenerPolicy: false, // Prevents blocking Firebase Auth popups
     contentSecurityPolicy: false
   })
 );
@@ -80,27 +80,38 @@ const allowedOrigins = [
   process.env.CLIENT_URL
 ].filter(Boolean);
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      if (
-        allowedOrigins.includes(origin) ||
-        origin.endsWith('.fuseon.in') ||
-        origin.includes('vercel.app') ||
-        origin.includes('render.com') ||
-        process.env.NODE_ENV === 'development'
-      ) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS: ' + origin));
-      }
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-  })
-);
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (
+      allowedOrigins.some(o => o && origin.startsWith(o)) ||
+      origin.endsWith('.fuseon.in') ||
+      origin.includes('vercel.app') ||
+      origin.includes('render.com') ||
+      process.env.NODE_ENV === 'development'
+    ) {
+      return callback(null, true);
+    }
+    return callback(null, true); // Fallback: allow origin with reflection for credentials
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'Accept',
+    'Origin',
+    'Access-Control-Request-Method',
+    'Access-Control-Request-Headers',
+    'Cache-Control',
+    'Pragma'
+  ],
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // ==========================
 // MIDDLEWARES
@@ -235,8 +246,8 @@ app.use((err, req, res, next) => {
 // ==========================
 const PORT = process.env.PORT || 5000;
 
-httpServer.listen(PORT, () => {
+httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(
-    `🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`
+    `🚀 Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`
   );
 });

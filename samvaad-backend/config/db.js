@@ -7,16 +7,13 @@ const connectDB = async () => {
     }
     try {
         const conn = await mongoose.connect(mongoURI, {
-            serverSelectionTimeoutMS: 5000
+            serverSelectionTimeoutMS: 15000
         });
         console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
     } catch (error) {
         console.error(`❌ MongoDB Connection Error: ${error.message}`);
-        if (process.env.NODE_ENV === 'production') {
-            process.exit(1);
-        } else {
-            console.warn('⚠️ Server running in development mode without active MongoDB connection.');
-        }
+        console.warn('⚠️ Server will retry MongoDB connection in 5 seconds...');
+        setTimeout(connectDB, 5000);
     }
 };
 
