@@ -14,21 +14,32 @@ const firebaseConfig = {
     measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-HC6SS7SV89"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-
-// Initialize Services
-const auth = getAuth(app);
-const db = getFirestore(app);
-const storage = getStorage(app);
+// Initialize Firebase conditionally to prevent runtime crashes when keys are missing
+let app = null;
+let auth = null;
+let db = null;
+let storage = null;
 let messaging = null;
 
-try {
-    if (typeof window !== "undefined" && typeof navigator !== "undefined") {
-        messaging = getMessaging(app);
+if (firebaseConfig.apiKey) {
+    try {
+        app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        db = getFirestore(app);
+        storage = getStorage(app);
+
+        if (typeof window !== "undefined" && typeof navigator !== "undefined") {
+            try {
+                messaging = getMessaging(app);
+            } catch (err) {
+                console.warn('Firebase Messaging not supported in this environment:', err.message);
+            }
+        }
+    } catch (err) {
+        console.warn('Firebase initialization error:', err.message);
     }
-} catch (err) {
-    console.warn('Firebase Messaging not supported');
+} else {
+    console.warn('⚠️ VITE_FIREBASE_API_KEY is not defined. Firebase services are running in safe fallback mode.');
 }
 
 export { auth, db, storage, messaging };

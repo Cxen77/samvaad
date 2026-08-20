@@ -9,7 +9,7 @@ const useNotifications = () => {
 
     useEffect(() => {
         const requestPermission = async () => {
-            if (!currentUser) return;
+            if (!currentUser || !messaging) return;
 
             try {
                 const permission = await Notification.requestPermission();

@@ -29,8 +29,10 @@ export const AuthProvider = ({ children }) => {
                 console.log("[AuthContext] /users/me fetched successfully:", userData.email);
                 setCurrentUser(userData);
             } catch (error) {
-                console.error("[AuthContext] Boot session failed:", error.message || error);
-                // No valid session — user needs to login (this is expected)
+                // 401 simply means no existing login session — user is a guest
+                if (error.response?.status !== 401) {
+                    console.warn("[AuthContext] Boot session notice:", error.message || error);
+                }
                 setAccessToken(null);
                 setCurrentUser(null);
             }
@@ -63,6 +65,9 @@ export const AuthProvider = ({ children }) => {
 
     // Google Login — issues access token + refresh cookie
     const googleLogin = async () => {
+        if (!auth) {
+            throw new Error("Firebase is not configured. Please add VITE_FIREBASE_API_KEY in .env to use Google Login.");
+        }
         const provider = new GoogleAuthProvider();
         const result = await signInWithPopup(auth, provider);
         const idToken = await result.user.getIdToken();
