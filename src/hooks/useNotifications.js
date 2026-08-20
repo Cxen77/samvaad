@@ -17,7 +17,8 @@ const useNotifications = () => {
                     console.log('Notification permission granted.');
 
                     // Get Token
-                    const currentToken = await getToken(messaging);
+                    const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+                    const currentToken = await getToken(messaging, vapidKey ? { vapidKey } : undefined);
 
                     if (currentToken) {
                         try {

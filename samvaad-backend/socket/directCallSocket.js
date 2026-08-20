@@ -66,14 +66,14 @@ export const initDirectCallSocket = (io, socket) => {
                 return socket.emit('CALL_ERROR', { message: 'Recipient user not found' });
             }
 
-            if (userActiveCall.has(calleeId)) {
+            if (userActiveCall.has(calleeIdStr)) {
                 // Callee is Busy
                 const busyCallId = `CALL-BUSY-${Date.now()}`;
                 await CallHistory.create({
                     callId: busyCallId,
                     conversationId,
                     callerId: userId,
-                    calleeId,
+                    calleeId: calleeIdStr,
                     callType,
                     status: 'BUSY',
                     duration: 0
@@ -110,7 +110,7 @@ export const initDirectCallSocket = (io, socket) => {
                         callId,
                         conversationId,
                         callerId: userId,
-                        calleeId,
+                        calleeId: calleeIdStr,
                         callType,
                         status: 'MISSED',
                         duration: 0
@@ -118,7 +118,7 @@ export const initDirectCallSocket = (io, socket) => {
 
                     // Notify both sides of timeout
                     io.to(`user:${userId}`).emit('CALL_TIMEOUT', { callId, message: 'No answer' });
-                    io.to(`user:${calleeId}`).emit('CALL_TIMEOUT', { callId, message: 'Missed call' });
+                    io.to(`user:${calleeIdStr}`).emit('CALL_TIMEOUT', { callId, message: 'Missed call' });
 
                     // Post Chat Timeline System Message
                     const missedText = callType === 'video' ? 'Missed video call' : 'Missed voice call';
@@ -138,7 +138,7 @@ export const initDirectCallSocket = (io, socket) => {
                 callId,
                 conversationId,
                 callerId: userId,
-                calleeId,
+                calleeId: calleeIdStr,
                 callType,
                 status: 'RINGING',
                 startedAt: null,
@@ -147,7 +147,8 @@ export const initDirectCallSocket = (io, socket) => {
 
             activeCalls.set(callId, callObj);
             userActiveCall.set(userId, callId);
-            userActiveCall.set(calleeId, callId);
+            userActiveCall.set(calleeIdStr, callId);
+            console.log(`[DirectCall] CALL_INITIATE: ${callId} caller=${userId} callee=${calleeIdStr} type=${callType}`);
 
             const callerUser = {
                 _id: socket.mongoUser._id,
@@ -158,7 +159,7 @@ export const initDirectCallSocket = (io, socket) => {
             };
 
             // Send Incoming Call signal to recipient's personal socket room
-            io.to(`user:${calleeId}`).emit('CALL_INCOMING', {
+            io.to(`user:${calleeIdStr}`).emit('CALL_INCOMING', {
                 callId,
                 conversationId,
                 caller: callerUser,
@@ -343,14 +344,36 @@ export const initDirectCallSocket = (io, socket) => {
         }
     });
 
-    // Handle Disconnect
-    socket.on('disconnect', () => {
+    // Handle Disconnect — persist call history and cleanup
+    socket.on('disconnect', async () => {
         const callId = userActiveCall.get(userId);
         if (callId) {
             const call = activeCalls.get(callId);
             if (call) {
                 const targetUserId = (userId === call.callerId.toString()) ? call.calleeId : call.callerId;
                 io.to(`user:${targetUserId}`).emit('CALL_ENDED', { callId, reason: 'Peer disconnected' });
+
+                // Persist call history on disconnect
+                try {
+                    const endedAt = new Date();
+                    const duration = call.startedAt ? Math.floor((endedAt.getTime() - new Date(call.startedAt).getTime()) / 1000) : 0;
+                    const status = call.status === 'CONNECTED' ? 'COMPLETED' : 'MISSED';
+                    await CallHistory.create({
+                        callId,
+                        conversationId: call.conversationId,
+                        callerId: call.callerId,
+                        calleeId: call.calleeId,
+                        callType: call.callType,
+                        status,
+                        startedAt: call.startedAt,
+                        endedAt,
+                        duration
+                    });
+                    console.log(`[DirectCall] Disconnect cleanup: ${callId} status=${status} duration=${duration}s`);
+                } catch (historyErr) {
+                    console.error('[DirectCall] Failed to persist call history on disconnect:', historyErr.message);
+                }
+
                 cleanupCallState(callId);
             }
         }

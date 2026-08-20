@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import io from 'socket.io-client';
 import { useAuth } from './AuthContext';
 import { getAccessToken } from '../api/axios';
@@ -11,6 +11,13 @@ export const SocketProvider = ({ children }) => {
     const [socket, setSocket] = useState(null);
     const [onlineUsers, setOnlineUsers] = useState(new Set());
     const { currentUser } = useAuth();
+    // Track which conversation the user is currently viewing (for reconnect re-join)
+    const activeConversationRef = useRef(null);
+
+    // Expose a way for chat components to register their active conversation
+    const setActiveConversation = (conversationId) => {
+        activeConversationRef.current = conversationId;
+    };
 
     useEffect(() => {
         let newSocket;
@@ -25,37 +32,55 @@ export const SocketProvider = ({ children }) => {
                     ? rawSocketUrl.replace(/\/api(\/v1)?\/?$/, '')
                     : (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5000');
 
-                console.log('[Socket] Connecting to server URL:', SERVER_URL);
+                console.log('[Socket] Connecting to:', SERVER_URL);
 
                 newSocket = io(SERVER_URL, {
                     auth: { token },
-                    transports: ['websocket', 'polling'],
+                    // Polling first — Render free tier often fails initial WebSocket upgrade during cold start
+                    transports: ['polling', 'websocket'],
+                    upgrade: true,
                     withCredentials: true,
                     reconnection: true,
-                    reconnectionAttempts: 10,
-                    reconnectionDelay: 1000
+                    reconnectionAttempts: 20,
+                    reconnectionDelay: 1000,
+                    reconnectionDelayMax: 10000,
+                    timeout: 45000
                 });
 
                 newSocket.on('connect', () => {
-                    // console.log('[Socket] Connected:', newSocket.id);
+                    console.log('[Socket] Connected:', newSocket.id);
+                    // Re-join active conversation after connect/reconnect
+                    if (activeConversationRef.current) {
+                        newSocket.emit('join:conversation', activeConversationRef.current);
+                    }
                 });
 
                 newSocket.on('disconnect', (reason) => {
-                    // console.log('[Socket] Disconnected:', reason);
+                    console.warn('[Socket] Disconnected:', reason);
                 });
 
                 newSocket.on('connect_error', (err) => {
                     console.error('[Socket] Connection error:', err.message);
                 });
 
+                newSocket.io.on('reconnect', (attempt) => {
+                    console.log('[Socket] Reconnected after', attempt, 'attempts');
+                });
+
+                newSocket.io.on('reconnect_attempt', (attempt) => {
+                    console.log('[Socket] Reconnect attempt:', attempt);
+                });
+
+                newSocket.io.on('reconnect_error', (err) => {
+                    console.error('[Socket] Reconnect error:', err.message);
+                });
+
                 // INITIAL SYNC: Receive full list of online users
                 newSocket.on('online:users', (userIds) => {
-                    // console.log('[Socket] Received initial online users:', userIds.length);
                     setOnlineUsers(new Set(userIds));
                 });
 
                 newSocket.on('user:presence', ({ userId, status }) => {
-                    // console.log(`[SocketContext] Presence Update: User ${userId} is now ${status}`);
                     setOnlineUsers(prev => {
                         const newSet = new Set(prev);
                         if (status === 'online') {
@@ -63,7 +88,6 @@ export const SocketProvider = ({ children }) => {
                         } else {
                             newSet.delete(userId);
                         }
-                        // console.log('[SocketContext] Updated Online Set:', [...newSet]);
                         return newSet;
                     });
                 });
@@ -82,7 +106,7 @@ export const SocketProvider = ({ children }) => {
     }, [currentUser]);
 
     return (
-        <SocketContext.Provider value={{ socket, onlineUsers }}>
+        <SocketContext.Provider value={{ socket, onlineUsers, setActiveConversation }}>
             {children}
         </SocketContext.Provider>
     );

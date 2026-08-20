@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { useSocket } from './SocketContext';
 import { useAuth } from './AuthContext';
 import toast from 'react-hot-toast';
@@ -7,12 +7,39 @@ const DirectCallContext = createContext();
 
 export const useDirectCall = () => useContext(DirectCallContext);
 
-const RTC_CONFIG = {
-  iceServers: [
+// Build ICE configuration from environment variables
+// STUN is always included. TURN is added if configured.
+const buildRtcConfig = () => {
+  const iceServers = [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' }
-  ]
+  ];
+
+  // Add TURN server if configured via environment variables
+  const turnUrl = import.meta.env.VITE_TURN_SERVER_URL;
+  const turnUsername = import.meta.env.VITE_TURN_USERNAME;
+  const turnCredential = import.meta.env.VITE_TURN_CREDENTIAL;
+
+  if (turnUrl && turnUsername && turnCredential) {
+    iceServers.push({
+      urls: turnUrl,
+      username: turnUsername,
+      credential: turnCredential
+    });
+    // Also add TURNS (TLS) variant if the URL uses turn: protocol
+    if (turnUrl.startsWith('turn:')) {
+      iceServers.push({
+        urls: turnUrl.replace('turn:', 'turns:'),
+        username: turnUsername,
+        credential: turnCredential
+      });
+    }
+  }
+
+  return { iceServers };
 };
+
+const RTC_CONFIG = buildRtcConfig();
 
 export const DirectCallProvider = ({ children }) => {
   const { socket } = useSocket();
@@ -46,6 +73,20 @@ export const DirectCallProvider = ({ children }) => {
   const remoteStreamRef = useRef(null);
   const screenStreamRef = useRef(null);
   const durationIntervalRef = useRef(null);
+  
+  // ICE candidate buffer — candidates that arrive before remote description is set
+  const iceCandidateBuffer = useRef([]);
+  const remoteDescriptionSet = useRef(false);
+
+  // Refs for state values used in socket handlers (avoids stale closures)
+  const callStateRef = useRef(callState);
+  const callDataRef = useRef(callData);
+  const socketRef = useRef(socket);
+
+  // Keep refs in sync with state
+  useEffect(() => { callStateRef.current = callState; }, [callState]);
+  useEffect(() => { callDataRef.current = callData; }, [callData]);
+  useEffect(() => { socketRef.current = socket; }, [socket]);
 
   // Helper: Enumerate Audio/Video Devices
   const updateDeviceList = async () => {
@@ -72,7 +113,9 @@ export const DirectCallProvider = ({ children }) => {
   // MEDIA & PEER CLEANUP STRATEGY (CRITICAL)
   // Ensures hardware camera & mic indicator lights turn COMPLETELY OFF
   // =========================================================================
-  const cleanupCall = () => {
+  const cleanupCall = useCallback(() => {
+    console.log('[DirectCall] cleanupCall — releasing all resources');
+
     // 1. Stop Duration Timer
     if (durationIntervalRef.current) {
       clearInterval(durationIntervalRef.current);
@@ -104,11 +147,17 @@ export const DirectCallProvider = ({ children }) => {
       pcRef.current.ontrack = null;
       pcRef.current.onicecandidate = null;
       pcRef.current.onconnectionstatechange = null;
+      pcRef.current.oniceconnectionstatechange = null;
+      pcRef.current.onsignalingstatechange = null;
       pcRef.current.close();
       pcRef.current = null;
     }
 
-    // 6. Reset State
+    // 6. Reset ICE candidate buffer
+    iceCandidateBuffer.current = [];
+    remoteDescriptionSet.current = false;
+
+    // 7. Reset State
     setCallState('IDLE');
     setCallData(null);
     setIsMuted(false);
@@ -119,12 +168,41 @@ export const DirectCallProvider = ({ children }) => {
     setPeerMuted(false);
     setCallDuration(0);
     setConnectionStatus('Connecting...');
-  };
+  }, []);
+
+  // Flush buffered ICE candidates after remote description is set
+  const flushIceCandidateBuffer = useCallback(async () => {
+    if (!pcRef.current) return;
+    const buffered = iceCandidateBuffer.current;
+    iceCandidateBuffer.current = [];
+    for (const candidate of buffered) {
+      try {
+        await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+        console.log('[WebRTC] Flushed buffered ICE candidate');
+      } catch (err) {
+        console.error('[WebRTC] Error flushing buffered ICE candidate:', err);
+      }
+    }
+  }, []);
 
   // Initialize WebRTC PeerConnection
-  const createPeerConnection = (callId) => {
-    if (pcRef.current) return pcRef.current;
+  const createPeerConnection = useCallback((callId) => {
+    // Guard: never reuse a closed/failed peer connection
+    if (pcRef.current) {
+      const state = pcRef.current.connectionState;
+      if (state === 'closed' || state === 'failed') {
+        console.warn('[WebRTC] Discarding stale PeerConnection (state:', state, ')');
+        pcRef.current = null;
+      } else {
+        return pcRef.current;
+      }
+    }
 
+    // Reset ICE buffer for new connection
+    iceCandidateBuffer.current = [];
+    remoteDescriptionSet.current = false;
+
+    console.log('[WebRTC] Creating new PeerConnection with config:', JSON.stringify(RTC_CONFIG));
     const pc = new RTCPeerConnection(RTC_CONFIG);
     pcRef.current = pc;
 
@@ -132,13 +210,14 @@ export const DirectCallProvider = ({ children }) => {
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach(track => {
         pc.addTrack(track, localStreamRef.current);
+        console.log('[WebRTC] Added local track:', track.kind);
       });
     }
 
     // Handle incoming ICE candidate
     pc.onicecandidate = (event) => {
-      if (event.candidate && socket) {
-        socket.emit('CALL_ICE_CANDIDATE', {
+      if (event.candidate && socketRef.current) {
+        socketRef.current.emit('CALL_ICE_CANDIDATE', {
           callId,
           candidate: event.candidate
         });
@@ -147,18 +226,21 @@ export const DirectCallProvider = ({ children }) => {
 
     // Handle remote track
     pc.ontrack = (event) => {
+      console.log('[WebRTC] Remote track received:', event.track.kind);
       if (event.streams && event.streams[0]) {
         remoteStreamRef.current = event.streams[0];
       } else {
-        const stream = new MediaStream();
-        stream.addTrack(event.track);
-        remoteStreamRef.current = stream;
+        if (!remoteStreamRef.current) {
+          remoteStreamRef.current = new MediaStream();
+        }
+        remoteStreamRef.current.addTrack(event.track);
       }
     };
 
     // Monitor WebRTC Connection State
     pc.onconnectionstatechange = () => {
       if (!pc) return;
+      console.log('[WebRTC] connectionState:', pc.connectionState);
       switch (pc.connectionState) {
         case 'connected':
           setConnectionStatus('Connected');
@@ -167,6 +249,9 @@ export const DirectCallProvider = ({ children }) => {
           setConnectionStatus('Connecting...');
           break;
         case 'disconnected':
+          setConnectionStatus('Reconnecting...');
+          // Don't immediately cleanup — WebRTC may recover
+          break;
         case 'failed':
           setConnectionStatus('Disconnected');
           toast.error('Call connection lost');
@@ -180,8 +265,18 @@ export const DirectCallProvider = ({ children }) => {
       }
     };
 
+    pc.oniceconnectionstatechange = () => {
+      if (!pc) return;
+      console.log('[WebRTC] iceConnectionState:', pc.iceConnectionState);
+    };
+
+    pc.onsignalingstatechange = () => {
+      if (!pc) return;
+      console.log('[WebRTC] signalingState:', pc.signalingState);
+    };
+
     return pc;
-  };
+  }, [cleanupCall]);
 
   // Get User Media Helper
   const acquireLocalMedia = async (callType) => {
@@ -228,12 +323,14 @@ export const DirectCallProvider = ({ children }) => {
   };
 
   // Socket Signaling Event Listeners
+  // IMPORTANT: Do NOT include callState in deps — it causes listener teardown during state transitions
+  // which creates race conditions (e.g., CALL_OFFER missed during RINGING→CONNECTED transition)
   useEffect(() => {
     if (!socket) return;
 
     // Incoming Call Notification
     const handleIncomingCall = ({ callId, conversationId, caller, callType }) => {
-      if (callState !== 'IDLE') return; // Handled by server busy check as fallback
+      if (callStateRef.current !== 'IDLE') return; // Handled by server busy check as fallback
       setCallData({ callId, conversationId, peerUser: caller, callType });
       setCallState('RINGING');
       setIsCameraOff(callType !== 'video');
@@ -258,19 +355,21 @@ export const DirectCallProvider = ({ children }) => {
       cleanupCall();
     };
 
-    // Call Accepted
+    // Call Accepted — Caller creates WebRTC Offer
     const handleCallAccepted = async ({ callId }) => {
+      console.log('[DirectCall] Call accepted, creating offer for callId:', callId);
       setCallState('CONNECTED');
       // Start duration timer
       durationIntervalRef.current = setInterval(() => {
         setCallDuration(prev => prev + 1);
       }, 1000);
 
-      // Caller creates WebRTC Offer
       try {
         const pc = createPeerConnection(callId);
         const offer = await pc.createOffer();
+        console.log('[WebRTC] Offer created');
         await pc.setLocalDescription(offer);
+        console.log('[WebRTC] Local description set (offer)');
         socket.emit('CALL_OFFER', { callId, sdp: pc.localDescription });
       } catch (err) {
         console.error('Error creating WebRTC offer:', err);
@@ -281,11 +380,19 @@ export const DirectCallProvider = ({ children }) => {
 
     // WebRTC Offer received (Callee side)
     const handleCallOffer = async ({ callId, sdp }) => {
+      console.log('[DirectCall] Received CALL_OFFER for callId:', callId);
       try {
         const pc = createPeerConnection(callId);
         await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+        console.log('[WebRTC] Remote description set (offer)');
+        remoteDescriptionSet.current = true;
+        // Flush any ICE candidates that arrived before the offer
+        await flushIceCandidateBuffer();
+
         const answer = await pc.createAnswer();
+        console.log('[WebRTC] Answer created');
         await pc.setLocalDescription(answer);
+        console.log('[WebRTC] Local description set (answer)');
         socket.emit('CALL_ANSWER', { callId, sdp: pc.localDescription });
       } catch (err) {
         console.error('Error handling WebRTC offer:', err);
@@ -294,23 +401,33 @@ export const DirectCallProvider = ({ children }) => {
 
     // WebRTC Answer received (Caller side)
     const handleCallAnswer = async ({ sdp }) => {
+      console.log('[DirectCall] Received CALL_ANSWER');
       try {
         if (pcRef.current) {
           await pcRef.current.setRemoteDescription(new RTCSessionDescription(sdp));
+          console.log('[WebRTC] Remote description set (answer)');
+          remoteDescriptionSet.current = true;
+          // Flush any ICE candidates that arrived before the answer
+          await flushIceCandidateBuffer();
         }
       } catch (err) {
         console.error('Error handling WebRTC answer:', err);
       }
     };
 
-    // ICE Candidate received
+    // ICE Candidate received — buffer if remote description not yet set
     const handleIceCandidate = async ({ candidate }) => {
       try {
-        if (pcRef.current && candidate) {
-          await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+        if (!candidate) return;
+        if (!pcRef.current || !remoteDescriptionSet.current) {
+          // Buffer the candidate — it arrived before the remote description
+          console.log('[WebRTC] Buffering ICE candidate (remote description not yet set)');
+          iceCandidateBuffer.current.push(candidate);
+          return;
         }
+        await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
       } catch (err) {
-        console.error('Error adding ICE candidate:', err);
+        console.error('[WebRTC] Error adding ICE candidate:', err);
       }
     };
 
@@ -381,7 +498,7 @@ export const DirectCallProvider = ({ children }) => {
       socket.off('CALL_CAMERA_TOGGLE', handlePeerCameraToggle);
       socket.off('CALL_MIC_TOGGLE', handlePeerMicToggle);
     };
-  }, [socket, callState]);
+  }, [socket, cleanupCall, createPeerConnection, flushIceCandidateBuffer]);
 
   // Initiate Call Action
   const initiateCall = async ({ targetUser, conversationId, type = 'voice' }) => {
@@ -391,7 +508,7 @@ export const DirectCallProvider = ({ children }) => {
       toast.error('Unable to start call: Target user not found');
       return;
     }
-    if (callState !== 'IDLE') {
+    if (callStateRef.current !== 'IDLE') {
       toast.error('You are already in a call');
       return;
     }
@@ -425,16 +542,16 @@ export const DirectCallProvider = ({ children }) => {
 
   // Accept Call Action
   const acceptCall = async () => {
-    if (!callData?.callId) return;
+    if (!callDataRef.current?.callId) return;
     try {
-      await acquireLocalMedia(callData.callType);
+      await acquireLocalMedia(callDataRef.current.callType);
       
       // Start duration timer
       durationIntervalRef.current = setInterval(() => {
         setCallDuration(prev => prev + 1);
       }, 1000);
 
-      socket.emit('CALL_ACCEPT', { callId: callData.callId });
+      socket.emit('CALL_ACCEPT', { callId: callDataRef.current.callId });
       setCallState('CONNECTED');
     } catch (err) {
       console.error('Failed to accept call:', err);
@@ -444,24 +561,24 @@ export const DirectCallProvider = ({ children }) => {
 
   // Reject Call Action
   const rejectCall = () => {
-    if (callData?.callId && socket) {
-      socket.emit('CALL_REJECT', { callId: callData.callId });
+    if (callDataRef.current?.callId && socketRef.current) {
+      socketRef.current.emit('CALL_REJECT', { callId: callDataRef.current.callId });
     }
     cleanupCall();
   };
 
   // Cancel Call Action (Caller)
   const cancelCall = () => {
-    if (callData?.callId && socket) {
-      socket.emit('CALL_CANCEL', { callId: callData.callId });
+    if (callDataRef.current?.callId && socketRef.current) {
+      socketRef.current.emit('CALL_CANCEL', { callId: callDataRef.current.callId });
     }
     cleanupCall();
   };
 
   // End Call Action
   const endCall = () => {
-    if (callData?.callId && socket) {
-      socket.emit('CALL_END', { callId: callData.callId });
+    if (callDataRef.current?.callId && socketRef.current) {
+      socketRef.current.emit('CALL_END', { callId: callDataRef.current.callId });
     }
     cleanupCall();
   };
@@ -474,8 +591,8 @@ export const DirectCallProvider = ({ children }) => {
         audioTrack.enabled = !audioTrack.enabled;
         const muted = !audioTrack.enabled;
         setIsMuted(muted);
-        if (callData?.callId && socket) {
-          socket.emit('CALL_MIC_TOGGLE', { callId: callData.callId, enabled: !muted });
+        if (callDataRef.current?.callId && socketRef.current) {
+          socketRef.current.emit('CALL_MIC_TOGGLE', { callId: callDataRef.current.callId, enabled: !muted });
         }
       }
     }
@@ -489,8 +606,8 @@ export const DirectCallProvider = ({ children }) => {
         videoTrack.enabled = !videoTrack.enabled;
         const off = !videoTrack.enabled;
         setIsCameraOff(off);
-        if (callData?.callId && socket) {
-          socket.emit('CALL_CAMERA_TOGGLE', { callId: callData.callId, enabled: !off });
+        if (callDataRef.current?.callId && socketRef.current) {
+          socketRef.current.emit('CALL_CAMERA_TOGGLE', { callId: callDataRef.current.callId, enabled: !off });
         }
       }
     }

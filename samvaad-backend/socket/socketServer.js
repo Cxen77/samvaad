@@ -37,7 +37,13 @@ export const initSocket = (httpServer) => {
             },
             methods: ["GET", "POST"],
             credentials: true
-        }
+        },
+        // Production reliability: Render free tier cold starts can take 30-45s
+        pingTimeout: 60000,
+        pingInterval: 25000,
+        connectTimeout: 45000,
+        transports: ['polling', 'websocket'],
+        allowUpgrades: true
     });
 
     // Middleware for Auth
