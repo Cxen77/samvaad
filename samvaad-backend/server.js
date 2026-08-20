@@ -47,6 +47,7 @@ initializeFirebase();
 // APP + SERVER
 // ==========================
 const app = express();
+app.set('trust proxy', 1); // Trust reverse proxies (Render, Vercel, Cloudflare, AWS)
 const httpServer = createServer(app);
 initSocket(httpServer);
 
@@ -62,6 +63,7 @@ const __dirname = path.dirname(__filename);
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
+    crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
     contentSecurityPolicy: false
   })
 );
@@ -71,6 +73,8 @@ app.use(
 // ==========================
 const allowedOrigins = [
   'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:3000',
   'https://fuseon.in',
   'https://www.fuseon.in',
   process.env.CLIENT_URL
@@ -82,11 +86,14 @@ app.use(
       if (!origin) return callback(null, true);
       if (
         allowedOrigins.includes(origin) ||
+        origin.endsWith('.fuseon.in') ||
+        origin.includes('vercel.app') ||
+        origin.includes('render.com') ||
         process.env.NODE_ENV === 'development'
       ) {
         callback(null, true);
       } else {
-        callback(new Error('Not allowed by CORS'));
+        callback(new Error('Not allowed by CORS: ' + origin));
       }
     },
     credentials: true,

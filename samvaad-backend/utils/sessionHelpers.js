@@ -47,7 +47,7 @@ const setRefreshCookie = (res, token) => {
     res.cookie('refreshToken', token, {
         httpOnly: true,
         secure: isProduction,
-        sameSite: isProduction ? 'strict' : 'lax',
+        sameSite: isProduction ? 'none' : 'lax', // 'none' is required for cross-origin deployments (e.g. Vercel/Render)
         path: '/',
         maxAge: REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000 // 7 days in ms
     });
@@ -62,7 +62,7 @@ const clearSessionCookie = (res) => {
     res.cookie('refreshToken', '', {
         httpOnly: true,
         secure: isProduction,
-        sameSite: isProduction ? 'strict' : 'lax',
+        sameSite: isProduction ? 'none' : 'lax',
         path: '/',
         expires: new Date(0)
     });

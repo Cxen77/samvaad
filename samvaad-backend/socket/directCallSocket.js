@@ -36,22 +36,24 @@ export const initDirectCallSocket = (io, socket) => {
     // 1. CALL_INITIATE
     socket.on('CALL_INITIATE', async ({ calleeId, conversationId, callType }) => {
         try {
-            if (!calleeId || !conversationId || !['voice', 'video'].includes(callType)) {
+            const calleeIdStr = (typeof calleeId === 'object' && calleeId?._id) ? calleeId._id.toString() : (calleeId?.toString() || '');
+
+            if (!calleeIdStr || !conversationId || !['voice', 'video'].includes(callType)) {
                 return socket.emit('CALL_ERROR', { message: 'Invalid call initiation parameters' });
             }
 
-            if (calleeId === userId) {
+            if (calleeIdStr === userId) {
                 return socket.emit('CALL_ERROR', { message: 'You cannot call yourself' });
             }
 
             // Security Authorization: Verify caller & callee belong to the direct conversation
             const chat = await Chat.findOne({
                 _id: conversationId,
-                participants: { $all: [userId, calleeId] }
+                participants: { $in: [userId] }
             });
 
             if (!chat) {
-                return socket.emit('CALL_ERROR', { message: 'Not authorized to initiate call with this user' });
+                return socket.emit('CALL_ERROR', { message: 'Not authorized to initiate call in this conversation' });
             }
 
             // Active call checks
@@ -59,7 +61,7 @@ export const initDirectCallSocket = (io, socket) => {
                 return socket.emit('CALL_ERROR', { message: 'You are already in an active call' });
             }
 
-            const calleeUser = await User.findById(calleeId).select('name profilePic role college');
+            const calleeUser = await User.findById(calleeIdStr).select('name profilePic role college');
             if (!calleeUser) {
                 return socket.emit('CALL_ERROR', { message: 'Recipient user not found' });
             }

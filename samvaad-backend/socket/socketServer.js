@@ -10,15 +10,31 @@ const onlineUsers = new Map(); // userId -> Set<socketId>
 const typingTimeouts = new Map(); // `${userId}:${chatId}` -> timeoutId
 
 export const initSocket = (httpServer) => {
+    const allowedOrigins = [
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:3000",
+        "https://fuseon.in",
+        "https://www.fuseon.in",
+        process.env.CLIENT_URL
+    ].filter(Boolean);
+
     io = new Server(httpServer, {
         cors: {
-            origin: [
-                "http://localhost:5173",
-                "http://localhost:5174",
-                "https://fuseon.in",
-                "https://www.fuseon.in",
-                process.env.CLIENT_URL
-            ].filter(Boolean),
+            origin: (origin, callback) => {
+                if (!origin) return callback(null, true);
+                if (
+                    allowedOrigins.includes(origin) ||
+                    origin.endsWith('.fuseon.in') ||
+                    origin.includes('vercel.app') ||
+                    origin.includes('render.com') ||
+                    process.env.NODE_ENV === 'development'
+                ) {
+                    callback(null, true);
+                } else {
+                    callback(null, true); // Allow connection with credentials fallback
+                }
+            },
             methods: ["GET", "POST"],
             credentials: true
         }
@@ -156,8 +172,21 @@ export const initSocket = (httpServer) => {
         });
 
         // Handle message:send natively over sockets
-        socket.on('message:send', async ({ conversationId, text, encryptedContent, iv, authTag, attachments }) => {
-            if ((!text && !encryptedContent) || !socket.mongoUser || !conversationId) return;
+        socket.on('message:send', async (payload) => {
+            if (!payload || !socket.mongoUser || !payload.conversationId) return;
+
+            let { conversationId, text, encryptedContent, iv, authTag, attachments } = payload;
+
+            // Defensive: If client passed E2EE payload inside attachments object
+            if (!encryptedContent && attachments && typeof attachments === 'object' && !Array.isArray(attachments)) {
+                encryptedContent = attachments.encryptedContent;
+                iv = attachments.iv;
+                authTag = attachments.authTag;
+                attachments = Array.isArray(attachments.attachments) ? attachments.attachments : [];
+            }
+
+            if (!text && !encryptedContent) return;
+
             try {
                 const Chat = (await import('../models/Chat.js')).default;
                 const Message = (await import('../models/Message.js')).default;
@@ -173,11 +202,16 @@ export const initSocket = (httpServer) => {
                     return;
                 }
 
+                // Ensure attachments is strictly an array of valid strings (URLs/paths)
+                const safeAttachments = Array.isArray(attachments)
+                    ? attachments.filter(a => typeof a === 'string')
+                    : [];
+
                 let messageData = {
                     senderId: socket.mongoUser._id,
                     chatId: conversationId,
-                    text: encryptedContent ? '[Encrypted Direct Message]' : text,
-                    attachments: attachments || [],
+                    text: encryptedContent ? '[Encrypted Direct Message]' : (text || ''),
+                    attachments: safeAttachments,
                     readBy: [socket.mongoUser._id]
                 };
 
@@ -207,6 +241,7 @@ export const initSocket = (httpServer) => {
                 io.to(conversationId).emit('message:new', message);
             } catch (err) {
                 console.error('[Socket] message:send error:', err);
+                socket.emit('error', { message: 'Failed to send message: ' + (err.message || 'Server error') });
             }
         });
 

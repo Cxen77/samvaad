@@ -20,13 +20,14 @@ export const SocketProvider = ({ children }) => {
                 const token = getAccessToken();
 
                 // Use environment variable for production, fallback to localhost for dev
-                // Correct: Connect to root URL (e.g. localhost:5000 or api.fuseon.in)
-                const SERVER_URL = import.meta.env.VITE_API_URL;
+                const SERVER_URL = import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5000');
 
                 newSocket = io(SERVER_URL, {
                     auth: { token },
+                    transports: ['websocket', 'polling'],
+                    withCredentials: true,
                     reconnection: true,
-                    reconnectionAttempts: 5,
+                    reconnectionAttempts: 10,
                     reconnectionDelay: 1000
                 });
 

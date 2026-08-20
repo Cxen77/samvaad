@@ -185,14 +185,24 @@ export const useChatHistory = (chatId) => {
         };
     }, [socket, chatId]);
 
-    const sendMessage = async (text, attachments = []) => {
-        // Now sending natively over sockets instead of HTTP API to ensure realtime synchronization
-        if (socket) {
-            socket.emit('message:send', {
+    const sendMessage = async (text, options = {}) => {
+        // Sending natively over sockets with support for E2EE encrypted payloads and attachments
+        if (socket && chatId) {
+            let payload = {
                 conversationId: chatId,
-                text,
-                attachments
-            });
+                text
+            };
+
+            if (Array.isArray(options)) {
+                payload.attachments = options;
+            } else if (options && typeof options === 'object') {
+                if (options.encryptedContent) payload.encryptedContent = options.encryptedContent;
+                if (options.iv) payload.iv = options.iv;
+                if (options.authTag) payload.authTag = options.authTag;
+                payload.attachments = Array.isArray(options.attachments) ? options.attachments : [];
+            }
+
+            socket.emit('message:send', payload);
             // We rely on handleNewMessage listener to instantly render our sent message
         }
     };

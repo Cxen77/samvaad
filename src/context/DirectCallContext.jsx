@@ -186,9 +186,18 @@ export const DirectCallProvider = ({ children }) => {
   // Get User Media Helper
   const acquireLocalMedia = async (callType) => {
     try {
+      const audioConstraint = (selectedDevices.audioInputId && typeof selectedDevices.audioInputId === 'string' && selectedDevices.audioInputId.trim() !== '')
+        ? { deviceId: { exact: selectedDevices.audioInputId } }
+        : true;
+      const videoConstraint = callType === 'video'
+        ? ((selectedDevices.videoInputId && typeof selectedDevices.videoInputId === 'string' && selectedDevices.videoInputId.trim() !== '')
+            ? { deviceId: { exact: selectedDevices.videoInputId } }
+            : true)
+        : false;
+
       const constraints = {
-        audio: selectedDevices.audioInputId ? { deviceId: { exact: selectedDevices.audioInputId } } : true,
-        video: callType === 'video' ? (selectedDevices.videoInputId ? { deviceId: { exact: selectedDevices.videoInputId } } : true) : false
+        audio: audioConstraint,
+        video: videoConstraint
       };
 
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -232,8 +241,21 @@ export const DirectCallProvider = ({ children }) => {
 
     // Outgoing Call Ack
     const handleOutgoingAck = ({ callId, conversationId, callee, callType }) => {
-      setCallData({ callId, conversationId, peerUser: callee, callType });
+      setCallData(prev => ({
+        ...prev,
+        callId,
+        conversationId,
+        peerUser: callee || prev?.peerUser,
+        callType
+      }));
       setCallState('OUTGOING');
+    };
+
+    // Call Error from Server
+    const handleCallError = ({ message }) => {
+      console.warn('[DirectCall] CALL_ERROR:', message);
+      toast.error(message || 'Call failed');
+      cleanupCall();
     };
 
     // Call Accepted
@@ -330,6 +352,7 @@ export const DirectCallProvider = ({ children }) => {
     // Subscribe to Socket Events
     socket.on('CALL_INCOMING', handleIncomingCall);
     socket.on('CALL_OUTGOING_ACK', handleOutgoingAck);
+    socket.on('CALL_ERROR', handleCallError);
     socket.on('CALL_ACCEPTED', handleCallAccepted);
     socket.on('CALL_OFFER', handleCallOffer);
     socket.on('CALL_ANSWER', handleCallAnswer);
@@ -345,6 +368,7 @@ export const DirectCallProvider = ({ children }) => {
     return () => {
       socket.off('CALL_INCOMING', handleIncomingCall);
       socket.off('CALL_OUTGOING_ACK', handleOutgoingAck);
+      socket.off('CALL_ERROR', handleCallError);
       socket.off('CALL_ACCEPTED', handleCallAccepted);
       socket.off('CALL_OFFER', handleCallOffer);
       socket.off('CALL_ANSWER', handleCallAnswer);
@@ -361,9 +385,18 @@ export const DirectCallProvider = ({ children }) => {
 
   // Initiate Call Action
   const initiateCall = async ({ targetUser, conversationId, type = 'voice' }) => {
-    if (!targetUser?._id || !conversationId) return;
+    const targetUserId = typeof targetUser === 'string' ? targetUser : (targetUser?._id || targetUser?.id);
+    if (!targetUserId || !conversationId) {
+      console.warn('[DirectCall] Missing targetUser or conversationId:', { targetUser, conversationId });
+      toast.error('Unable to start call: Target user not found');
+      return;
+    }
     if (callState !== 'IDLE') {
       toast.error('You are already in a call');
+      return;
+    }
+    if (!socket || !socket.connected) {
+      toast.error('Unable to place call: Network disconnected. Reconnecting...');
       return;
     }
 
@@ -371,13 +404,21 @@ export const DirectCallProvider = ({ children }) => {
       await acquireLocalMedia(type);
       setIsCameraOff(type !== 'video');
       
+      const peerObj = (typeof targetUser === 'object' && targetUser !== null)
+        ? targetUser
+        : { _id: targetUserId, name: 'Contact' };
+
+      setCallData({ conversationId, peerUser: peerObj, callType: type });
+      setCallState('OUTGOING');
+
       socket.emit('CALL_INITIATE', {
-        calleeId: targetUser._id,
+        calleeId: targetUserId,
         conversationId,
         callType: type
       });
     } catch (err) {
       console.error('Call initiation failed:', err);
+      toast.error(err.message || 'Could not access microphone/camera');
       cleanupCall();
     }
   };

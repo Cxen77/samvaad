@@ -116,21 +116,39 @@ function Chat() {
       }
 
       // Direct Chat
-      const other = (c.participants || []).find(p => p._id !== currentUser?._id) || {};
-      const otherIdStr = other._id ? other._id.toString() : "";
-      const isOnline = onlineUsers.has(otherIdStr) || onlineUsers.has(other._id);
+      const other = (c.participants || []).find(p => {
+        const pid = (typeof p === 'object' && p !== null) ? (p._id?.toString() || p.id?.toString()) : p?.toString();
+        return pid && pid !== currentUser?._id?.toString();
+      }) || {};
+
+      const otherUserObj = (typeof other === 'object' && other !== null && (other._id || other.id))
+        ? {
+            _id: (other._id || other.id).toString(),
+            name: other.name || 'User',
+            profilePic: other.profilePic || null,
+            email: other.email || '',
+            role: other.role || 'user'
+          }
+        : {
+            _id: (typeof other === 'string' ? other : (other?._id?.toString() || other?.id?.toString() || '')),
+            name: (typeof other === 'object' && other?.name) ? other.name : 'User',
+            profilePic: (typeof other === 'object' && other?.profilePic) ? other.profilePic : null
+          };
+
+      const otherIdStr = otherUserObj._id || '';
+      const isOnline = otherIdStr ? (onlineUsers.has(otherIdStr) || onlineUsers.has(other._id)) : false;
 
       return {
         id: c._id,
         _id: c._id,
-        name: other.name || "User",
-        avatar: other.profilePic || null,
+        name: otherUserObj.name || "User",
+        avatar: otherUserObj.profilePic || null,
         status: isOnline ? "Online" : "Offline",
         isOnline: isOnline,
         lastMessage: c.lastMessage,
         isGroupChat: false,
         chatType: 'direct',
-        otherUser: other,
+        otherUser: otherUserObj,
         isEncrypted: true
       };
     });
