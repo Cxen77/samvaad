@@ -33,7 +33,7 @@ const createSession = async (userId, req, res) => {
     });
 
     // Set cookie
-    setRefreshCookie(res, rawRefreshToken);
+    setRefreshCookie(res, rawRefreshToken, req);
 
     return rawRefreshToken;
 };
@@ -41,8 +41,10 @@ const createSession = async (userId, req, res) => {
 /**
  * Set the refresh token as an HTTP-only secure cookie.
  */
-const setRefreshCookie = (res, token) => {
-    const isProduction = process.env.NODE_ENV === 'production';
+const setRefreshCookie = (res, token, req = null) => {
+    const isHttps = req?.secure || req?.headers?.['x-forwarded-proto'] === 'https';
+    const isRemote = req?.headers?.host ? !req.headers.host.includes('localhost') : true;
+    const isProduction = process.env.NODE_ENV === 'production' || isHttps || isRemote;
 
     res.cookie('refreshToken', token, {
         httpOnly: true,
@@ -56,8 +58,10 @@ const setRefreshCookie = (res, token) => {
 /**
  * Clear the refresh token cookie.
  */
-const clearSessionCookie = (res) => {
-    const isProduction = process.env.NODE_ENV === 'production';
+const clearSessionCookie = (res, req = null) => {
+    const isHttps = req?.secure || req?.headers?.['x-forwarded-proto'] === 'https';
+    const isRemote = req?.headers?.host ? !req.headers.host.includes('localhost') : true;
+    const isProduction = process.env.NODE_ENV === 'production' || isHttps || isRemote;
 
     res.cookie('refreshToken', '', {
         httpOnly: true,
