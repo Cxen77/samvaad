@@ -127,7 +127,7 @@ const GithubImportModal = ({ isOpen, onClose, onImport }) => {
                                 <div className="text-gray-500">Preparing connection...</div>
                             ) : (
                                 <a
-                                    href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/github?token=${token}`}
+                                    href={`${(import.meta.env.VITE_API_URL || 'http://localhost:5000').trim().replace(/\/+$/, '')}/api/auth/github?token=${token}`}
                                     className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-black transition"
                                 >
                                     <FaGithub /> Connect GitHub
@@ -202,7 +202,7 @@ const GithubImportModal = ({ isOpen, onClose, onImport }) => {
                         Don't see your private repos? {' '}
                         {token && (
                             <a
-                                href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/github?token=${token}`}
+                                href={`${(import.meta.env.VITE_API_URL || 'http://localhost:5000').trim().replace(/\/+$/, '')}/api/auth/github?token=${token}`}
                                 className="text-sky-600 hover:underline font-medium cursor-pointer"
                             >
                                 Grant Private Access

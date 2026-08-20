@@ -39,7 +39,8 @@ const AccountSettings = ({ user, setUser }) => {
             }
         } else {
             const token = getAccessToken();
-            window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/github?token=${token}`;
+            const backendUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000').trim().replace(/\/+$/, '');
+            window.location.href = `${backendUrl}/api/auth/github?token=${token}`;
         }
     };
 

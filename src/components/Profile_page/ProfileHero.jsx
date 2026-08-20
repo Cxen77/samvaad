@@ -89,7 +89,7 @@ const ProfileHero = ({ user, isOwner, isOwnProfile, isFollowing, onFollow, onInv
                 {user.bannerPic ? (
                     <img
                         src={user.bannerPic.startsWith('/uploads')
-                            ? `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${user.bannerPic}`
+                            ? `${(import.meta.env.VITE_API_URL || 'http://localhost:5000').trim().replace(/\/+$/, '')}${user.bannerPic}`
                             : user.bannerPic}
                         alt="Cover"
                         className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"

@@ -29,7 +29,7 @@ const Avatar = ({ src, alt, size = "md", className = "" }) => {
             return src;
         }
         if (src.startsWith('/uploads')) {
-            const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+            const backendUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000').trim().replace(/\/+$/, '');
             return `${backendUrl}${src}`;
         }
         return src;

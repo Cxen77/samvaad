@@ -19,8 +19,13 @@ export const SocketProvider = ({ children }) => {
             if (currentUser) {
                 const token = getAccessToken();
 
-                // Use environment variable for production, fallback to localhost for dev
-                const SERVER_URL = import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5000');
+                // Clean and normalize socket server URL (strips leading spaces, quotes, and /api subpaths)
+                const rawSocketUrl = (import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_URL || '').trim().replace(/^['"]|['"]$/g, '').replace(/\/+$/, '');
+                const SERVER_URL = rawSocketUrl
+                    ? rawSocketUrl.replace(/\/api(\/v1)?\/?$/, '')
+                    : (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5000');
+
+                console.log('[Socket] Connecting to server URL:', SERVER_URL);
 
                 newSocket = io(SERVER_URL, {
                     auth: { token },

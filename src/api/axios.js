@@ -9,8 +9,18 @@ export const setAccessToken = (token) => {
 
 export const getAccessToken = () => accessToken;
 
+// Clean and normalize API URLs to prevent malformed URLs from leading/trailing whitespace
+const rawApiUrl = (import.meta.env.VITE_API_URL || '').trim().replace(/\/+$/, '');
+const API_BASE_URL = import.meta.env.PROD
+    ? (rawApiUrl ? (rawApiUrl.endsWith('/api/v1') ? rawApiUrl : `${rawApiUrl}/api/v1`) : 'https://fuseon.in/api/v1')
+    : '/api/v1';
+
+const REFRESH_URL = import.meta.env.PROD
+    ? (rawApiUrl ? (rawApiUrl.endsWith('/api/v1') ? `${rawApiUrl}/auth/refresh` : `${rawApiUrl}/api/v1/auth/refresh`) : 'https://fuseon.in/api/v1/auth/refresh')
+    : '/api/v1/auth/refresh';
+
 const api = axios.create({
-    baseURL: import.meta.env.PROD ? `${import.meta.env.VITE_API_URL || 'https://fuseon.in'}/api/v1` : '/api/v1',
+    baseURL: API_BASE_URL,
     headers: {
         'Content-Type': 'application/json',
     },
@@ -39,7 +49,7 @@ export const refreshAccessToken = () => {
     }
     isRefreshing = true;
     refreshPromise = axios.post(
-        import.meta.env.PROD ? `${import.meta.env.VITE_API_URL || 'https://fuseon.in'}/api/v1/auth/refresh` : '/api/v1/auth/refresh',
+        REFRESH_URL,
         {},
         { withCredentials: true }
     ).then(({ data }) => {
