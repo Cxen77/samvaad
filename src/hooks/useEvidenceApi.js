@@ -191,6 +191,15 @@ const useEvidenceApi = () => {
     finally { setLoading(false); }
   }, []);
 
+  const verifyPublicAnchor = useCallback(async (evidenceId) => {
+    try {
+      setLoading(true);
+      const res = await api.get(`/evidence/public-anchor/${evidenceId}/verify`);
+      return res.data;
+    } catch (err) { return handleError(err); }
+    finally { setLoading(false); }
+  }, []);
+
   return {
     loading, error,
     // Recordings
@@ -202,7 +211,7 @@ const useEvidenceApi = () => {
     // Audit
     fetchAuditLogs, verifyAuditChain,
     // Security & Evidence
-    fetchSecurityStatus, sealMeeting, verifyMeetingEvidence, fetchEvidenceChain,
+    fetchSecurityStatus, sealMeeting, verifyMeetingEvidence, fetchEvidenceChain, verifyPublicAnchor,
   };
 };
 

@@ -1,5 +1,6 @@
 import express from 'express';
-import SystemSettings from '../models/SystemSettings.js';
+import SystemSettings, { DEFAULT_FEATURES } from '../models/SystemSettings.js';
+import mongoose from 'mongoose';
 
 const router = express.Router();
 
@@ -10,11 +11,15 @@ const router = express.Router();
  */
 router.get('/features', async (req, res) => {
     try {
-        const settings = await SystemSettings.getSettings();
-        res.json({ features: settings.getFeaturesObject() });
+        if (mongoose.connection.readyState === 1) {
+            const settings = await SystemSettings.getSettings();
+            return res.json({ features: settings.getFeaturesObject() });
+        }
+        // Fallback if DB is disconnected (e.g. initial dev setup)
+        return res.json({ features: DEFAULT_FEATURES });
     } catch (err) {
-        console.error('[System] Failed to fetch features:', err.message);
-        res.status(500).json({ message: 'Failed to load features' });
+        console.warn('[System] Database unavailable, falling back to default features:', err.message);
+        return res.json({ features: DEFAULT_FEATURES });
     }
 });
 

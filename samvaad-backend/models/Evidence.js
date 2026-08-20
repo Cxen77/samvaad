@@ -46,6 +46,37 @@ const evidenceSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
+  publicAnchor: {
+    status: {
+      type: String,
+      enum: ['none', 'pending', 'anchored', 'verified'],
+      default: 'none',
+    },
+    network: {
+      type: String,
+      default: 'OpenTimestamps (Bitcoin Calendar Pool)',
+    },
+    otsProof: {
+      type: String,
+      default: null,
+    },
+    calendarUrl: {
+      type: String,
+      default: null,
+    },
+    txHash: {
+      type: String,
+      default: null,
+    },
+    explorerUrl: {
+      type: String,
+      default: 'https://opentimestamps.org',
+    },
+    anchoredAt: {
+      type: Date,
+      default: null,
+    },
+  },
 }, {
   timestamps: true,
 });

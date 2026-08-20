@@ -10,6 +10,7 @@ import {
   sealMeeting, verifyMeetingEvidenceEndpoint,
   getSecurityStatus,
   getEvidenceChainEndpoint,
+  verifyPublicAnchorEndpoint,
 } from '../controllers/evidenceController.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -60,7 +61,8 @@ router.post('/meetings/:id/verify', verifyMeetingEvidenceEndpoint);
 // ---- Security ----
 router.get('/security/status', getSecurityStatus);
 
-// ---- Evidence Chain ----
+// ---- Evidence Chain & Public Anchors ----
 router.get('/chain/:meetingId', getEvidenceChainEndpoint);
+router.get('/public-anchor/:evidenceId/verify', verifyPublicAnchorEndpoint);
 
 export default router;

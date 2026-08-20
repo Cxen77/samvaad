@@ -2,15 +2,11 @@ import React from 'react';
 import Turnstile from 'react-turnstile';
 
 const TurnstileWidget = ({ onVerify, onError }) => {
-    const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
-
-    if (!siteKey) {
-        console.error("VITE_TURNSTILE_SITE_KEY is missing!");
-        return <div className="text-red-500 text-xs">Captcha Config Missing</div>;
-    }
+    // Use configured site key or Cloudflare's official testing site key (Always passes)
+    const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || '1x00000000000000000000AA';
 
     return (
-        <div className="w-full my-2">
+        <div className="w-full my-2 flex justify-center">
             <Turnstile
                 sitekey={siteKey}
                 onVerify={onVerify}

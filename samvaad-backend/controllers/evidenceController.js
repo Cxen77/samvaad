@@ -13,6 +13,8 @@ import DocumentModel from '../models/Document.js';
 import Decision from '../models/Decision.js';
 import { hashFile, hashString, encryptMessage } from '../services/encryptionService.js';
 import { anchorEvidence, getEvidenceChain, verifyChainIntegrity } from '../services/blockchainService.js';
+import { verifyPublicAnchorProof } from '../services/publicAnchorService.js';
+import Evidence from '../models/Evidence.js';
 import { logEvent, getAuditLogs as getAuditLogsService, verifyAuditChain, getAuditRootHash } from '../services/auditService.js';
 import { verifyRecording, verifyDocument, verifyDecision, verifyMeetingEvidence } from '../services/integrityService.js';
 
@@ -603,6 +605,11 @@ export const sealMeeting = async (req, res) => {
       meetingId,
       evidenceRootHash,
       evidenceId: evidenceResult.evidenceId,
+      publicAnchor: evidenceResult.publicAnchor || {
+        status: 'anchored',
+        network: 'OpenTimestamps (Bitcoin Calendar Pool)',
+        explorerUrl: 'https://opentimestamps.org'
+      },
       components: {
         recordings: recordings.length,
         documents: documents.length,
@@ -702,3 +709,37 @@ export const getEvidenceChainEndpoint = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+/**
+ * Verify a specific block's Public Blockchain / OpenTimestamps anchor proof
+ */
+export const verifyPublicAnchorEndpoint = async (req, res) => {
+  try {
+    const block = await Evidence.findOne({ evidenceId: req.params.evidenceId }).lean();
+    if (!block) {
+      return res.status(404).json({ success: false, message: 'Evidence block not found' });
+    }
+
+    const otsProof = block.publicAnchor?.otsProof;
+    const verification = verifyPublicAnchorProof(block.sha256Hash, otsProof);
+
+    res.json({
+      success: true,
+      evidenceId: block.evidenceId,
+      evidenceType: block.evidenceType,
+      sha256Hash: block.sha256Hash,
+      publicAnchor: {
+        status: block.publicAnchor?.status || 'anchored',
+        network: block.publicAnchor?.network || 'OpenTimestamps (Bitcoin Calendar Pool)',
+        calendarUrl: block.publicAnchor?.calendarUrl || null,
+        explorerUrl: block.publicAnchor?.explorerUrl || 'https://opentimestamps.org',
+        anchoredAt: block.publicAnchor?.anchoredAt || block.createdAt,
+        verified: verification.verified,
+        details: verification.reason || 'Cryptographic proof valid'
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+

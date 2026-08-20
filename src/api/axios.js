@@ -43,9 +43,10 @@ export const refreshAccessToken = () => {
         {},
         { withCredentials: true }
     ).then(({ data }) => {
-        setAccessToken(data.accessToken);
-        onRefreshed(data.accessToken);
-        return data.accessToken;
+        const token = data?.accessToken || null;
+        setAccessToken(token);
+        onRefreshed(token);
+        return token;
     }).finally(() => {
         isRefreshing = false;
         refreshPromise = null;
