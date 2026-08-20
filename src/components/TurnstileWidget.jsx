@@ -17,7 +17,7 @@ const TurnstileWidget = ({ onVerify, onError }) => {
     };
 
     return (
-        <div className="w-full my-2">
+        <div className="w-full my-2 flex justify-center">
             <Turnstile
                 sitekey={siteKey}
                 onVerify={onVerify}

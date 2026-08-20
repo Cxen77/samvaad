@@ -16,18 +16,14 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         const loadUser = async () => {
             try {
-                // Use shared refreshAccessToken so it participates in the same lock
-                // as the axios interceptor — prevents two simultaneous /auth/refresh calls
-                console.log("[AuthContext] Attempting silent refresh payload on boot...");
-                await refreshAccessToken();
-                console.log("[AuthContext] Silent refresh success. Requesting /users/me...");
-
-                // Now use the api instance (with token) to fetch user profile
-                // Add _skipAuthRedirect to prevent the interceptor from immediately
-                // kicking the user out if this specific check 401s
-                const { data: userData } = await api.get('/users/me', { _skipAuthRedirect: true });
-                console.log("[AuthContext] /users/me fetched successfully:", userData.email);
-                setCurrentUser(userData);
+                const token = await refreshAccessToken();
+                if (token) {
+                    const { data: userData } = await api.get('/users/me', { _skipAuthRedirect: true });
+                    setCurrentUser(userData);
+                } else {
+                    setAccessToken(null);
+                    setCurrentUser(null);
+                }
             } catch (error) {
                 // 401 simply means no existing login session — user is a guest
                 if (error.response?.status !== 401) {
@@ -35,8 +31,9 @@ export const AuthProvider = ({ children }) => {
                 }
                 setAccessToken(null);
                 setCurrentUser(null);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
         loadUser();
     }, []);

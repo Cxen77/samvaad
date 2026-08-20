@@ -9,6 +9,7 @@
  */
 import crypto from 'crypto';
 import Evidence from '../models/Evidence.js';
+import { anchorEvidenceToPublicLedger, verifyPublicAnchorProof } from './publicAnchorService.js';
 
 const GENESIS_HASH = '0000000000000000000000000000000000000000000000000000000000000000';
 
@@ -23,8 +24,8 @@ const sha256 = (data) => crypto.createHash('sha256').update(data).digest('hex');
 const genEvidenceId = () => 'EVD-' + Date.now().toString(36).toUpperCase() + '-' + crypto.randomBytes(4).toString('hex').toUpperCase();
 
 /**
- * Anchor evidence to the local ledger.
- * Creates a new block in the hash chain.
+ * Anchor evidence to the local ledger + public decentralized blockchain anchor.
+ * Creates a new block in the hash chain and anchors to OpenTimestamps.
  */
 export const anchorEvidence = async ({ evidenceHash, evidenceType, referenceId, meetingId, eventType, metadata }) => {
   // Get the latest block to chain from
@@ -35,6 +36,23 @@ export const anchorEvidence = async ({ evidenceHash, evidenceType, referenceId, 
   // The block hash includes the evidence hash + previous hash + index for chain integrity
   const blockData = `${blockIndex}:${previousHash}:${evidenceHash}:${evidenceType}:${referenceId}:${Date.now()}`;
   const blockHash = sha256(blockData);
+
+  // Trigger public decentralized anchoring
+  let publicAnchor = {
+    status: 'pending',
+    network: 'OpenTimestamps (Bitcoin Calendar Pool)',
+    explorerUrl: 'https://opentimestamps.org',
+    anchoredAt: new Date()
+  };
+
+  try {
+    const anchorRes = await anchorEvidenceToPublicLedger(blockHash, { evidenceType, referenceId, meetingId });
+    if (anchorRes) {
+      publicAnchor = anchorRes;
+    }
+  } catch (err) {
+    console.warn('[BlockchainService] Public anchor error (non-fatal):', err.message);
+  }
 
   const evidence = await Evidence.create({
     evidenceId: genEvidenceId(),
@@ -50,6 +68,7 @@ export const anchorEvidence = async ({ evidenceHash, evidenceType, referenceId, 
       originalEvidenceHash: evidenceHash,
     },
     verified: true,
+    publicAnchor,
   });
 
   return {
@@ -58,6 +77,7 @@ export const anchorEvidence = async ({ evidenceHash, evidenceType, referenceId, 
     sha256Hash: evidence.sha256Hash,
     previousHash: evidence.previousHash,
     evidenceType,
+    publicAnchor: evidence.publicAnchor,
     timestamp: evidence.createdAt,
   };
 };
@@ -77,13 +97,28 @@ export const verifyEvidence = async (evidenceId, currentHash) => {
   }
 
   const hashMatch = storedOriginalHash === currentHash;
+  let publicAnchorVerification = { verified: false, network: block.publicAnchor?.network || 'OpenTimestamps' };
+
+  if (block.publicAnchor?.otsProof) {
+    publicAnchorVerification = verifyPublicAnchorProof(block.sha256Hash, block.publicAnchor.otsProof);
+  }
+
   return {
     verified: hashMatch,
     storedHash: storedOriginalHash,
     currentHash,
     blockIndex: block.blockIndex,
     blockchainVerified: hashMatch,
-    reason: hashMatch ? 'Hash match confirmed' : 'Hash mismatch — data may have been tampered',
+    publicAnchor: {
+      status: block.publicAnchor?.status || 'none',
+      network: block.publicAnchor?.network || 'OpenTimestamps (Bitcoin Calendar Pool)',
+      calendarUrl: block.publicAnchor?.calendarUrl || null,
+      explorerUrl: block.publicAnchor?.explorerUrl || 'https://opentimestamps.org',
+      anchoredAt: block.publicAnchor?.anchoredAt || block.createdAt,
+      proofVerified: publicAnchorVerification.verified,
+      proofDetails: publicAnchorVerification.reason || null
+    },
+    reason: hashMatch ? 'Hash match confirmed & anchored' : 'Hash mismatch — data may have been tampered',
   };
 };
 

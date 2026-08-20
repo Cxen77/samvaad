@@ -81,7 +81,7 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
         }
     ));
 } else {
-    console.warn("⚠️ GitHub OAuth is disabled: GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET are not set in environment.");
+    console.warn('⚠️ GitHub OAuth: GITHUB_CLIENT_ID/SECRET not configured. GitHub OAuth disabled in development.');
 }
 
 export default passport;
