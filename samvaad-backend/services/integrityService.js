@@ -34,12 +34,29 @@ export const verifyRecording = async (recordingId) => {
     const recording = await Recording.findOne({ recordingId }).lean();
     if (!recording) return { verified: false, reason: 'Recording not found' };
 
-    // Re-hash the actual file
+    // Re-hash the actual file (decrypting if AES-256 encrypted)
     let currentFileHash;
     try {
-      currentFileHash = await sha256File(recording.filePath);
-    } catch {
-      return { verified: false, reason: 'Recording file not accessible', hash: recording.sha256Hash };
+      if (recording.encryptionStatus === 'encrypted' && recording.encryptionIv && recording.encryptionAuthTag) {
+        const encKey = process.env.CHAT_MASTER_KEY;
+        if (encKey && encKey.length === 64) {
+          const encBuffer = fs.readFileSync(recording.filePath);
+          const key = Buffer.from(encKey, 'hex');
+          const iv = Buffer.from(recording.encryptionIv, 'hex');
+          const authTag = Buffer.from(recording.encryptionAuthTag, 'hex');
+          const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv, { authTagLength: 16 });
+          decipher.setAuthTag(authTag);
+          const decrypted = Buffer.concat([decipher.update(encBuffer), decipher.final()]);
+          currentFileHash = crypto.createHash('sha256').update(decrypted).digest('hex');
+        } else {
+          currentFileHash = await sha256File(recording.filePath);
+        }
+      } else {
+        currentFileHash = await sha256File(recording.filePath);
+      }
+    } catch (hashErr) {
+      console.warn('[Integrity] File hashing error:', hashErr.message);
+      return { verified: false, reason: 'Recording file not accessible: ' + hashErr.message, hash: recording.sha256Hash };
     }
 
     const storedHashMatch = currentFileHash === recording.sha256Hash;

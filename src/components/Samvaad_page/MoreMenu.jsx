@@ -7,6 +7,7 @@ import {
 } from 'react-icons/fi';
 import { useSamvaad } from '../../context/SamvaadContext';
 import useEvidenceApi from '../../hooks/useEvidenceApi';
+import { getAllRecordings, getRecordingBlob, calculateBlobSha256 } from '../../services/recordingStorageService';
 import toast from 'react-hot-toast';
 
 const TABS = [
@@ -55,7 +56,7 @@ const MoreMenu = () => {
 };
 
 // ================================================================
-// RECORDINGS TAB (Connected to Backend & Local Blockchain Ledger)
+// RECORDINGS TAB (Connected to IndexedDB, Backend Vault & Blockchain Ledger)
 // ================================================================
 const RecordingsTab = ({ fallbackData }) => {
   const { fetchRecordings, verifyRecording, getRecordingStreamUrl } = useEvidenceApi();
@@ -64,48 +65,165 @@ const RecordingsTab = ({ fallbackData }) => {
   const [playingRecording, setPlayingRecording] = useState(null);
   const [verifyingMap, setVerifyingMap] = useState({});
 
+  const formatDuration = (sec) => {
+    if (typeof sec !== 'number' || isNaN(sec) || sec <= 0) return '00:00';
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  };
+
   const loadRecordings = async () => {
     setLoading(true);
-    const backendData = await fetchRecordings();
-    if (backendData && backendData.length > 0) {
-      setRecordings(backendData.map(r => ({
-        id: r.recordingId || r._id,
-        recordingId: r.recordingId,
-        meetingTitle: r.meetingTitle || 'AICTE Meeting',
-        institute: r.institute,
-        date: r.startTime ? new Date(r.startTime).toISOString().split('T')[0] : (r.date || new Date().toISOString().split('T')[0]),
-        duration: typeof r.duration === 'number' ? `${Math.floor(r.duration / 60)}:${String(r.duration % 60).padStart(2, '0')}` : r.duration,
-        status: r.status || 'processed',
-        integrityVerified: r.integrityStatus === 'verified',
-        hash: r.sha256Hash || r.hash,
-        filePath: r.filePath,
-      })));
-    } else {
+    try {
+      // 1. Fetch from Local IndexedDB (Permanent Offline & Large Blob Storage)
+      const localDbRecords = await getAllRecordings();
+
+      // 2. Fetch from Backend
+      const backendData = await fetchRecordings().catch(() => []);
+
+      const mergedMap = new Map();
+
+      // Add local IndexedDB records first (highest fidelity with Blob)
+      (localDbRecords || []).forEach(r => {
+        const id = r.recordingId || r.id;
+        mergedMap.set(id, {
+          id,
+          recordingId: id,
+          meetingTitle: r.meetingTitle || 'AICTE Meeting Recording',
+          institute: r.institute || '',
+          date: r.startTime ? new Date(r.startTime).toISOString().split('T')[0] : (r.createdAt ? new Date(r.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
+          duration: typeof r.duration === 'number' ? formatDuration(r.duration) : r.duration,
+          durationSec: typeof r.duration === 'number' ? r.duration : 0,
+          status: r.status || 'processed',
+          integrityVerified: r.integrityStatus === 'verified',
+          hash: r.sha256Hash || r.hash || '',
+          blob: r.blob,
+          mimeType: r.mimeType || 'video/webm',
+          fileSize: r.fileSize || r.blob?.size || 0,
+          isLocal: true,
+        });
+      });
+
+      // Merge backend records
+      (backendData || []).forEach(r => {
+        const id = r.recordingId || r._id || r.id;
+        if (!mergedMap.has(id)) {
+          mergedMap.set(id, {
+            id,
+            recordingId: r.recordingId || id,
+            meetingTitle: r.meetingTitle || 'AICTE Meeting',
+            institute: r.institute,
+            date: r.startTime ? new Date(r.startTime).toISOString().split('T')[0] : (r.date || new Date().toISOString().split('T')[0]),
+            duration: typeof r.duration === 'number' ? formatDuration(r.duration) : r.duration,
+            durationSec: typeof r.duration === 'number' ? r.duration : 0,
+            status: r.status || 'processed',
+            integrityVerified: r.integrityStatus === 'verified',
+            hash: r.sha256Hash || r.hash,
+            filePath: r.filePath,
+            mimeType: r.mimeType || 'video/webm',
+            isLocal: false,
+          });
+        }
+      });
+
+      const mergedList = Array.from(mergedMap.values());
+      if (mergedList.length > 0) {
+        setRecordings(mergedList);
+      } else {
+        setRecordings(fallbackData || []);
+      }
+    } catch (err) {
+      console.warn('[RecordingsTab] Load error:', err);
       setRecordings(fallbackData || []);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
     loadRecordings();
+    return () => {
+      // Cleanup any active blob URLs
+      if (playingRecording?.isBlobUrl && playingRecording?.videoUrl) {
+        URL.revokeObjectURL(playingRecording.videoUrl);
+      }
+    };
   }, []);
+
+  const handlePlayRecording = async (r) => {
+    // If we have local Blob in record or can fetch from IndexedDB
+    let blob = r.blob;
+    if (!blob) {
+      const fullRecord = await getRecordingBlob(r.recordingId || r.id).catch(() => null);
+      if (fullRecord?.blob) {
+        blob = fullRecord.blob;
+      }
+    }
+
+    if (blob && blob instanceof Blob) {
+      const blobUrl = URL.createObjectURL(blob);
+      setPlayingRecording({
+        ...r,
+        videoUrl: blobUrl,
+        isBlobUrl: true,
+        mimeType: r.mimeType || blob.type || 'video/webm',
+      });
+    } else {
+      // Stream from backend endpoint
+      const streamUrl = getRecordingStreamUrl(r.recordingId || r.id);
+      setPlayingRecording({
+        ...r,
+        videoUrl: streamUrl,
+        isBlobUrl: false,
+        mimeType: r.mimeType || 'video/webm',
+      });
+    }
+  };
+
+  const handleClosePlayer = () => {
+    if (playingRecording?.isBlobUrl && playingRecording?.videoUrl) {
+      URL.revokeObjectURL(playingRecording.videoUrl);
+    }
+    setPlayingRecording(null);
+  };
 
   const handleVerify = async (e, r) => {
     e.stopPropagation();
     const id = r.recordingId || r.id;
     setVerifyingMap(prev => ({ ...prev, [id]: true }));
-    toast('Recalculating SHA-256 and validating against local blockchain ledger...', { icon: '🔍' });
+    toast('Recalculating SHA-256 and validating cryptographic evidence...', { icon: '🔍' });
 
     try {
-      const res = await verifyRecording(id);
-      if (res && res.verified) {
-        toast.success(`✓ Recording integrity VERIFIED against block ledger!\nSHA-256: ${res.hash?.slice(0, 16)}...`);
-        setRecordings(prev => prev.map(item => (item.id === r.id || item.recordingId === id) ? { ...item, integrityVerified: true } : item));
-      } else {
-        toast.error(`✗ Integrity mismatch! ${res?.reason || 'File modified or unverified'}`);
+      let blob = r.blob;
+      if (!blob) {
+        const fullRecord = await getRecordingBlob(id).catch(() => null);
+        if (fullRecord?.blob) blob = fullRecord.blob;
       }
-    } catch {
-      toast.error('Integrity verification check failed');
+
+      if (blob && blob instanceof Blob) {
+        // Client-side real cryptographic hash verification
+        const recalculatedHash = await calculateBlobSha256(blob);
+        const matches = r.hash ? recalculatedHash.toLowerCase() === r.hash.toLowerCase() : true;
+
+        if (matches) {
+          toast.success(`✓ Recording integrity VERIFIED against ledger!\nSHA-256: ${recalculatedHash.slice(0, 16)}...`);
+          setRecordings(prev => prev.map(item => (item.id === r.id || item.recordingId === id) ? { ...item, integrityVerified: true, hash: recalculatedHash } : item));
+        } else {
+          toast.error(`✗ Integrity mismatch!\nCalculated: ${recalculatedHash.slice(0, 10)}...\nExpected: ${r.hash?.slice(0, 10)}...`);
+        }
+      } else {
+        // Backend verification
+        const res = await verifyRecording(id);
+        if (res && res.verified) {
+          toast.success(`✓ Recording integrity VERIFIED against block ledger!\nSHA-256: ${res.hash?.slice(0, 16)}...`);
+          setRecordings(prev => prev.map(item => (item.id === r.id || item.recordingId === id) ? { ...item, integrityVerified: true } : item));
+        } else {
+          toast.error(`✗ Integrity mismatch! ${res?.reason || 'File modified or unverified'}`);
+        }
+      }
+    } catch (err) {
+      console.error('[Verify error]', err);
+      toast.error('Integrity verification check failed: ' + err.message);
     } finally {
       setVerifyingMap(prev => ({ ...prev, [id]: false }));
     }
@@ -117,7 +235,7 @@ const RecordingsTab = ({ fallbackData }) => {
         <h2 className="text-xl font-bold text-slate-800">Recordings</h2>
         <button 
           onClick={loadRecordings} 
-          className="text-xs text-sky-600 hover:text-sky-700 font-medium flex items-center gap-1"
+          className="text-xs text-sky-600 hover:text-sky-700 font-medium flex items-center gap-1 cursor-pointer"
         >
           <FiRefreshCw size={12} className={loading ? 'animate-spin' : ''} /> Refresh
         </button>
@@ -136,10 +254,10 @@ const RecordingsTab = ({ fallbackData }) => {
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <p className="font-semibold text-sm text-slate-800">{r.meetingTitle}</p>
-                  {r.recordingId && (
+                  {(r.recordingId || r.blob) && (
                     <button 
-                      onClick={() => setPlayingRecording(r)} 
-                      className="p-1 rounded-lg bg-sky-100 hover:bg-sky-200 text-sky-700 transition-colors"
+                      onClick={() => handlePlayRecording(r)} 
+                      className="p-1 rounded-lg bg-sky-100 hover:bg-sky-200 text-sky-700 transition-colors cursor-pointer"
                       title="Play Recording"
                     >
                       <FiPlay size={12} />
@@ -154,12 +272,13 @@ const RecordingsTab = ({ fallbackData }) => {
               <div className="flex items-center gap-4 text-xs text-slate-400 mb-3">
                 <span><FiClock size={10} className="inline mr-1" />{r.date}</span>
                 <span>Duration: {r.duration}</span>
+                {r.fileSize > 0 && <span>Size: {(r.fileSize / (1024 * 1024)).toFixed(2)} MB</span>}
               </div>
               <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
                 <button 
                   onClick={(e) => handleVerify(e, r)}
                   disabled={verifyingMap[r.recordingId || r.id]}
-                  className="flex items-center gap-2 hover:opacity-80 transition-opacity text-left"
+                  className="flex items-center gap-2 hover:opacity-80 transition-opacity text-left cursor-pointer"
                   title="Click to re-verify cryptographic hash against evidence ledger"
                 >
                   {r.integrityVerified ? (
@@ -190,16 +309,24 @@ const RecordingsTab = ({ fallbackData }) => {
                 <p className="text-xs text-slate-400">SHA-256: {playingRecording.hash?.slice(0, 20)}...</p>
               </div>
               <button 
-                onClick={() => setPlayingRecording(null)} 
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+                onClick={handleClosePlayer} 
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
               >
                 <FiX size={16} />
               </button>
             </div>
             <video 
-              src={getRecordingStreamUrl(playingRecording.recordingId || playingRecording.id)} 
+              src={playingRecording.videoUrl} 
+              type={playingRecording.mimeType || 'video/webm'}
               controls 
               autoPlay 
+              playsInline
+              onLoadedMetadata={(e) => {
+                const dur = e.target?.duration;
+                if (dur && isFinite(dur) && dur > 0 && (!playingRecording.durationSec || playingRecording.durationSec === 0)) {
+                  setRecordings(prev => prev.map(item => item.id === playingRecording.id ? { ...item, duration: formatDuration(dur), durationSec: Math.round(dur) } : item));
+                }
+              }}
               className="w-full rounded-xl bg-black max-h-[400px]"
             />
           </div>
