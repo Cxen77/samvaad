@@ -17,6 +17,19 @@ const HandIcon = ({ size = 18, className = '' }) => (
   </svg>
 );
 
+// Record SVG Icon
+const RecordIcon = ({ isRecording = false, size = 17, className = '' }) => (
+  <div className="relative flex items-center justify-center">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="12" cy="12" r="4" fill={isRecording ? "#ef4444" : "currentColor"} />
+    </svg>
+    {isRecording && (
+      <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-500 animate-ping" />
+    )}
+  </div>
+);
+
 const BottomToolbar = ({ session }) => {
   const {
     isMuted, toggleMute,
@@ -24,6 +37,7 @@ const BottomToolbar = ({ session }) => {
     isScreenSharing, toggleScreenShare,
     handRaised, toggleHandRaise,
     sendReaction,
+    isRecording, toggleRecording, recSeconds, formatRecTime, isRecPaused,
     activePanel, togglePanel,
     setShowEndModal,
     isMeetingSealed,
@@ -111,6 +125,23 @@ const BottomToolbar = ({ session }) => {
             </div>
           )}
         </div>
+
+        {/* Record (Evidence / Cloud Recording) */}
+        <button
+          onClick={toggleRecording}
+          disabled={isMeetingSealed}
+          className={`toolbar-control-btn shrink-0 ${
+            isRecording 
+              ? 'toolbar-control-btn--danger bg-red-600/15 dark:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/40' 
+              : ''
+          }`}
+          title={isRecording ? `Recording (${formatRecTime ? formatRecTime(recSeconds) : recSeconds}s) - Click to Stop & Save` : 'Start Meeting Recording'}
+        >
+          <RecordIcon isRecording={isRecording} size={17} />
+          <span className={`toolbar-control-label ${isRecording ? 'font-bold text-red-600 dark:text-red-400' : ''}`}>
+            {isRecording ? (formatRecTime ? formatRecTime(recSeconds).substring(3) : `${recSeconds}s`) : 'Record'}
+          </span>
+        </button>
 
         <div className="toolbar-separator shrink-0" />
 
