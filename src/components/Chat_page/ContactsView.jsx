@@ -6,7 +6,7 @@ import {
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 
-const ContactsView = ({ onStartChat, onOpenProfile }) => {
+const ContactsView = ({ onStartChat, onOpenProfile, onBack }) => {
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -86,15 +86,26 @@ const ContactsView = ({ onStartChat, onOpenProfile }) => {
   return (
     <div className="flex-1 flex flex-col bg-white dark:bg-black h-full overflow-hidden font-sans">
       {/* Header */}
-      <div className="h-16 px-6 border-b border-gray-200 dark:border-slate-800 flex items-center justify-between shrink-0 bg-white dark:bg-black">
-        <div>
-          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-            <FiUser className="text-slate-500" size={18} />
-            <span>Contacts</span>
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            {contacts.length} saved {contacts.length === 1 ? 'contact' : 'contacts'} in your directory
-          </p>
+      <div className="h-auto sm:h-16 px-4 sm:px-6 py-3 sm:py-0 border-b border-gray-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between shrink-0 bg-white dark:bg-black gap-2">
+        <div className="flex items-center gap-2">
+          {onBack && (
+            <button 
+              onClick={onBack}
+              className="p-1.5 -ml-1 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              title="Back to chats"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            </button>
+          )}
+          <div>
+            <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+              <FiUser className="text-slate-500" size={18} />
+              <span>Contacts</span>
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              {contacts.length} saved {contacts.length === 1 ? 'contact' : 'contacts'} in your directory
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
@@ -169,7 +180,8 @@ const ContactsView = ({ onStartChat, onOpenProfile }) => {
               {filteredContacts.map(contact => (
                 <div
                   key={contact._id}
-                  className="bg-white dark:bg-slate-800/80 border border-gray-200 dark:border-slate-700/60 rounded-xl p-4 hover:border-slate-300 dark:hover:border-slate-600 transition-all flex flex-col justify-between"
+                  onClick={() => onStartChat(contact)}
+                  className="bg-white dark:bg-slate-800/80 border border-gray-200 dark:border-slate-700/60 rounded-xl p-4 hover:border-sky-500/80 dark:hover:border-sky-500/80 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer"
                 >
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-sm flex items-center justify-center shrink-0 overflow-hidden">
@@ -209,20 +221,29 @@ const ContactsView = ({ onStartChat, onOpenProfile }) => {
                   {/* Actions */}
                   <div className="mt-4 pt-3 border-t border-gray-100 dark:border-slate-700/50 flex items-center justify-between gap-2">
                     <button
-                      onClick={() => onStartChat(contact)}
-                      className="flex-1 py-1.5 bg-sky-500 hover:bg-sky-500 text-white rounded-md text-xs font-semibold flex items-center justify-center gap-1 transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onStartChat(contact);
+                      }}
+                      className="flex-1 py-1.5 bg-sky-500 hover:bg-sky-600 text-white rounded-md text-xs font-semibold flex items-center justify-center gap-1 transition-colors cursor-pointer"
                     >
                       <FiMessageSquare size={13} /> Message
                     </button>
                     <button
-                      onClick={() => onOpenProfile(contact)}
-                      className="px-2.5 py-1.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-md text-xs font-medium transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenProfile(contact);
+                      }}
+                      className="px-2.5 py-1.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-md text-xs font-medium transition-colors cursor-pointer"
                     >
                       Details
                     </button>
                     <button
-                      onClick={() => handleRemoveContact(contact._id, contact.name)}
-                      className="p-1.5 text-slate-400 hover:text-red-500 transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveContact(contact._id, contact.name);
+                      }}
+                      className="p-1.5 text-slate-400 hover:text-red-500 transition-colors cursor-pointer"
                       title="Remove contact"
                     >
                       <FiUserMinus size={14} />
@@ -259,7 +280,8 @@ const ContactsView = ({ onStartChat, onOpenProfile }) => {
                 {directoryResults.map(user => (
                   <div
                     key={user._id}
-                    className="p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors"
+                    onClick={() => onStartChat(user)}
+                    className="p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors cursor-pointer"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center justify-center shrink-0 overflow-hidden">
@@ -291,16 +313,22 @@ const ContactsView = ({ onStartChat, onOpenProfile }) => {
                         </span>
                       ) : (
                         <button
-                          onClick={() => handleAddContact(user)}
-                          className="px-3 py-1.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 text-xs font-semibold rounded-md flex items-center gap-1 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddContact(user);
+                          }}
+                          className="px-3 py-1.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 text-xs font-semibold rounded-md flex items-center gap-1 transition-colors cursor-pointer"
                         >
                           <FiUserPlus size={13} /> Add Contact
                         </button>
                       )}
 
                       <button
-                        onClick={() => onStartChat(user)}
-                        className="px-3 py-1.5 bg-sky-500 hover:bg-sky-500 text-white text-xs font-semibold rounded-md transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onStartChat(user);
+                        }}
+                        className="px-3 py-1.5 bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold rounded-md transition-colors cursor-pointer"
                       >
                         Message
                       </button>

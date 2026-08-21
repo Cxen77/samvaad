@@ -97,11 +97,11 @@ function MessageBubble({
         </div>
       )}
 
-      <div className="group relative max-w-md">
+      <div className="group relative max-w-[85%] sm:max-w-md">
 
         {/* MESSAGE BUBBLE */}
         <div
-          className={`px-4 py-2.5 rounded-2xl shadow-sm text-sm leading-relaxed ${isMe
+          className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl shadow-sm text-xs sm:text-sm leading-relaxed break-words ${isMe
               ? "bg-sky-500 hover:bg-sky-600 text-white rounded-br-md font-medium"
               : "bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 rounded-bl-md border border-gray-200 dark:border-slate-700"
             }`}

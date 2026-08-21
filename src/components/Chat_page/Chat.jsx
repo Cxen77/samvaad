@@ -6,7 +6,8 @@ import api from "../../api/axios";
 import { 
   FiSearch, FiVideo, FiPlus, FiUserPlus, FiUsers, FiShield, 
   FiMessageSquare, FiChevronDown, FiInfo, FiLock, FiPhone,
-  FiGrid, FiUser, FiBookOpen, FiTrash2, FiCheckSquare, FiSquare, FiX, FiFilter
+  FiGrid, FiUser, FiBookOpen, FiTrash2, FiCheckSquare, FiSquare, FiX, FiFilter,
+  FiArrowLeft
 } from "react-icons/fi";
 
 // SIDEBAR & MODALS
@@ -26,6 +27,7 @@ import { useSocket } from "../../context/SocketContext";
 import { useDirectCall } from "../../context/DirectCallContext";
 import * as e2eeService from "../../services/e2eeService";
 import toast from "react-hot-toast";
+import useIsMobile from "../../hooks/useIsMobile";
 
 function Chat() {
   const { id } = useParams();
@@ -34,6 +36,7 @@ function Chat() {
   const { currentUser } = useAuth();
   const { onlineUsers } = useSocket();
   const { initiateCall } = useDirectCall();
+  const isMobile = useIsMobile(768);
 
   const { chats, loading: chatsLoading, refetchChats } = useChats();
   const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
@@ -407,6 +410,8 @@ function Chat() {
     }) : []
   };
 
+  const hasActiveChat = Boolean(id && id !== currentUser?._id && id !== 'self-chat');
+
   return (
     <div className="w-full h-full flex bg-white dark:bg-black text-gray-900 dark:text-slate-100 overflow-hidden font-sans">
       
@@ -416,6 +421,7 @@ function Chat() {
         onClose={() => setIsNewChatModalOpen(false)}
         onSelectUser={c => {
           refetchChats?.();
+          setActiveFilter('all');
           navigate(`/chat/${c._id}`);
         }}
       />
@@ -425,6 +431,7 @@ function Chat() {
         onClose={() => setIsGroupModalOpen(false)}
         onGroupCreated={c => {
           refetchChats?.();
+          setActiveFilter('all');
           navigate(`/chat/${c._id}`);
         }}
       />
@@ -433,335 +440,360 @@ function Chat() {
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
         contactUser={activeChat.otherUser}
-        onStartChat={c => navigate(`/chat/${c._id}`)}
+        onStartChat={c => {
+          setActiveFilter('all');
+          navigate(`/chat/${c._id}`);
+        }}
         onContactRemoved={() => refetchChats?.()}
       />
 
       {/* LEFT SIDEBAR (LIGHT + DARK SUPPORT) */}
-      <div className="w-full md:w-[380px] lg:w-[420px] flex flex-col bg-white dark:bg-black border-r border-gray-200 dark:border-slate-800 shrink-0 h-full">
-        
-        {/* Header with New Chat & Multi-Select Toggle */}
-        <div className="px-4 py-3.5 border-b border-gray-200 dark:border-slate-800 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h1 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <FiMessageSquare className="text-sky-600 dark:text-sky-400" size={20} />
-              <span>Chats</span>
-            </h1>
-          </div>
+      {(!isMobile || (!hasActiveChat && activeFilter !== 'contacts')) && (
+        <div className="w-full md:w-[380px] lg:w-[420px] flex flex-col bg-white dark:bg-black border-r border-gray-200 dark:border-slate-800 shrink-0 h-full">
+          
+          {/* Header with New Chat & Multi-Select Toggle */}
+          <div className="px-4 py-3.5 border-b border-gray-200 dark:border-slate-800 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <FiMessageSquare className="text-sky-600 dark:text-sky-400" size={20} />
+                <span>Chats</span>
+              </h1>
+            </div>
 
-          <div className="flex items-center gap-1.5">
-            {/* Multi-Select Toggle Button (Teams / Zoom Style) */}
-            <button
-              onClick={() => {
-                setIsMultiSelectMode(!isMultiSelectMode);
-                setSelectedChatIds(new Set());
-              }}
-              className={`p-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
-                isMultiSelectMode 
-                  ? 'bg-sky-600 text-white shadow-xs' 
-                  : 'bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-800'
-              }`}
-              title={isMultiSelectMode ? "Cancel Selection" : "Select Multiple Chats"}
-            >
-              <FiCheckSquare size={15} />
-              <span className="hidden sm:inline">{isMultiSelectMode ? "Done" : "Select"}</span>
-            </button>
-
-            {/* New Direct Chat */}
-            <button
-              onClick={() => setIsNewChatModalOpen(true)}
-              className="p-2 bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-800 rounded-xl transition-all cursor-pointer"
-              title="New Direct Chat"
-            >
-              <FiUserPlus size={15} />
-            </button>
-
-            {/* New Group Chat */}
-            <button
-              onClick={() => setIsGroupModalOpen(true)}
-              className="p-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl transition-all shadow-xs cursor-pointer"
-              title="Create New Group"
-            >
-              <FiPlus size={15} />
-            </button>
-          </div>
-        </div>
-
-        {/* Filter Tabs Row */}
-        <div className="px-3 py-2.5 flex items-center gap-2 border-b border-gray-100 dark:border-slate-900 overflow-x-auto scrollbar-none">
-          {[
-            { id: 'all', label: 'All', icon: FiGrid },
-            { id: 'direct', label: 'Direct', icon: FiUser },
-            { id: 'groups', label: 'Groups', icon: FiUsers },
-            { id: 'meetings', label: 'Meetings', icon: FiVideo },
-            { id: 'contacts', label: 'Contacts', icon: FiBookOpen }
-          ].map(tab => {
-            const Icon = tab.icon;
-            return (
-              <button 
-                key={tab.id}
-                onClick={() => setActiveFilter(tab.id)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
-                  activeFilter === tab.id 
+            <div className="flex items-center gap-1.5">
+              {/* Multi-Select Toggle Button (Teams / Zoom Style) */}
+              <button
+                onClick={() => {
+                  setIsMultiSelectMode(!isMultiSelectMode);
+                  setSelectedChatIds(new Set());
+                }}
+                className={`p-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  isMultiSelectMode 
                     ? 'bg-sky-600 text-white shadow-xs' 
-                    : 'bg-gray-100 dark:bg-slate-900 text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white border border-slate-200/60 dark:border-slate-800'
+                    : 'bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-800'
                 }`}
+                title={isMultiSelectMode ? "Cancel Selection" : "Select Multiple Chats"}
               >
-                <Icon size={14} />
-                <span>{tab.label}</span>
+                <FiCheckSquare size={15} />
+                <span className="hidden sm:inline">{isMultiSelectMode ? "Done" : "Select"}</span>
               </button>
-            );
-          })}
-        </div>
 
-        {/* Search Bar & Hide Empty Meetings Toggle */}
-        <div className="p-3 border-b border-gray-100 dark:border-slate-900 space-y-2">
-          <div className="relative">
-            <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" size={15} strokeWidth={1.5} />
-            <input
-              type="text"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Search conversations..."
-              className="w-full bg-gray-100 dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs md:text-sm text-gray-900 dark:text-white focus:outline-none focus:border-sky-500 focus:bg-white dark:focus:bg-black transition-all shadow-xs"
-            />
-            {search && (
-              <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer">
-                <FiX size={14} />
+              {/* New Direct Chat */}
+              <button
+                onClick={() => setIsNewChatModalOpen(true)}
+                className="p-2 bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-800 rounded-xl transition-all cursor-pointer"
+                title="New Direct Chat"
+              >
+                <FiUserPlus size={15} />
               </button>
+
+              {/* New Group Chat */}
+              <button
+                onClick={() => setIsGroupModalOpen(true)}
+                className="p-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl transition-all shadow-xs cursor-pointer"
+                title="Create New Group"
+              >
+                <FiPlus size={15} />
+              </button>
+            </div>
+          </div>
+
+          {/* Filter Tabs Row */}
+          <div className="px-3 py-2.5 flex items-center gap-2 border-b border-gray-100 dark:border-slate-900 overflow-x-auto scrollbar-none">
+            {[
+              { id: 'all', label: 'All', icon: FiGrid },
+              { id: 'direct', label: 'Direct', icon: FiUser },
+              { id: 'groups', label: 'Groups', icon: FiUsers },
+              { id: 'meetings', label: 'Meetings', icon: FiVideo },
+              { id: 'contacts', label: 'Contacts', icon: FiBookOpen }
+            ].map(tab => {
+              const Icon = tab.icon;
+              return (
+                <button 
+                  key={tab.id}
+                  onClick={() => setActiveFilter(tab.id)}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
+                    activeFilter === tab.id 
+                      ? 'bg-sky-600 text-white shadow-xs' 
+                      : 'bg-gray-100 dark:bg-slate-900 text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white border border-slate-200/60 dark:border-slate-800'
+                  }`}
+                >
+                  <Icon size={14} />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Search Bar & Hide Empty Meetings Toggle */}
+          <div className="p-3 border-b border-gray-100 dark:border-slate-900 space-y-2">
+            <div className="relative">
+              <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" size={15} strokeWidth={1.5} />
+              <input
+                type="text"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search conversations..."
+                className="w-full bg-gray-100 dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs md:text-sm text-gray-900 dark:text-white focus:outline-none focus:border-sky-500 focus:bg-white dark:focus:bg-black transition-all shadow-xs"
+              />
+              {search && (
+                <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer">
+                  <FiX size={14} />
+                </button>
+              )}
+            </div>
+
+            {/* Quick Clean Empty Meetings / Filter (Clean inline, no box or border) */}
+            {emptyMeetingChats.length > 0 && (
+              <div className="flex items-center justify-between px-1 pt-1 text-xs">
+                <span className="text-slate-500 dark:text-slate-400 truncate">
+                  {emptyMeetingChats.length} empty meeting {emptyMeetingChats.length > 1 ? 'chats' : 'chat'}
+                </span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={handleCleanEmptyMeetings}
+                    className="text-sky-600 dark:text-sky-400 hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                    title="Clean all empty meeting chats at once"
+                  >
+                    <FiTrash2 size={12} />
+                    <span>Clean All</span>
+                  </button>
+                  <span className="text-slate-300 dark:text-slate-700">|</span>
+                  <button
+                    onClick={() => setHideEmptyMeetings(!hideEmptyMeetings)}
+                    className={`font-semibold cursor-pointer ${hideEmptyMeetings ? 'text-sky-500' : 'text-slate-400'}`}
+                  >
+                    {hideEmptyMeetings ? 'Hidden' : 'Show'}
+                  </button>
+                </div>
+              </div>
             )}
           </div>
 
-          {/* Quick Clean Empty Meetings / Filter (Clean inline, no box or border) */}
-          {emptyMeetingChats.length > 0 && (
-            <div className="flex items-center justify-between px-1 pt-1 text-xs">
-              <span className="text-slate-500 dark:text-slate-400 truncate">
-                {emptyMeetingChats.length} empty meeting {emptyMeetingChats.length > 1 ? 'chats' : 'chat'}
-              </span>
-              <div className="flex items-center gap-2 shrink-0">
+          {/* MULTI-SELECT FLOATING ACTION BAR (ZOOM / TEAMS STYLE) */}
+          {isMultiSelectMode && (
+            <div className="px-3.5 py-2.5 bg-sky-50 dark:bg-sky-950/60 border-b border-sky-200 dark:border-sky-800 flex items-center justify-between animate-fadeIn text-xs">
+              <div className="flex items-center gap-2">
                 <button
-                  onClick={handleCleanEmptyMeetings}
-                  className="text-sky-600 dark:text-sky-400 hover:underline font-semibold flex items-center gap-1 cursor-pointer"
-                  title="Clean all empty meeting chats at once"
+                  onClick={handleSelectAll}
+                  className="px-2.5 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg font-semibold text-slate-700 dark:text-slate-300 hover:text-sky-600 transition-colors cursor-pointer"
                 >
-                  <FiTrash2 size={12} />
-                  <span>Clean All</span>
+                  {selectedChatIds.size === filteredChats.filter(c => !c.isSelf).length ? 'Deselect All' : 'Select All'}
                 </button>
-                <span className="text-slate-300 dark:text-slate-700">|</span>
+                <span className="font-bold text-sky-700 dark:text-sky-300">
+                  {selectedChatIds.size} selected
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {emptyMeetingChats.length > 0 && (
+                  <button
+                    onClick={handleSelectEmptyMeetings}
+                    className="px-2.5 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:text-sky-600 rounded-lg font-semibold cursor-pointer"
+                    title="Select all empty meeting chats"
+                  >
+                    Select Empty
+                  </button>
+                )}
                 <button
-                  onClick={() => setHideEmptyMeetings(!hideEmptyMeetings)}
-                  className={`font-semibold cursor-pointer ${hideEmptyMeetings ? 'text-sky-500' : 'text-slate-400'}`}
+                  disabled={selectedChatIds.size === 0}
+                  onClick={handleBulkDelete}
+                  className={`px-3 py-1 rounded-lg font-semibold flex items-center gap-1.5 transition-all ${
+                    selectedChatIds.size > 0
+                      ? 'bg-red-500 hover:bg-red-600 text-white shadow-xs cursor-pointer'
+                      : 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
+                  }`}
                 >
-                  {hideEmptyMeetings ? 'Hidden' : 'Show'}
+                  <FiTrash2 size={13} />
+                  <span>Delete ({selectedChatIds.size})</span>
                 </button>
               </div>
             </div>
           )}
-        </div>
 
-        {/* MULTI-SELECT FLOATING ACTION BAR (ZOOM / TEAMS STYLE) */}
-        {isMultiSelectMode && (
-          <div className="px-3.5 py-2.5 bg-sky-50 dark:bg-sky-950/60 border-b border-sky-200 dark:border-sky-800 flex items-center justify-between animate-fadeIn text-xs">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleSelectAll}
-                className="px-2.5 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg font-semibold text-slate-700 dark:text-slate-300 hover:text-sky-600 transition-colors cursor-pointer"
-              >
-                {selectedChatIds.size === filteredChats.filter(c => !c.isSelf).length ? 'Deselect All' : 'Select All'}
-              </button>
-              <span className="font-bold text-sky-700 dark:text-sky-300">
-                {selectedChatIds.size} selected
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              {emptyMeetingChats.length > 0 && (
-                <button
-                  onClick={handleSelectEmptyMeetings}
-                  className="px-2.5 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:text-sky-600 rounded-lg font-semibold cursor-pointer"
-                  title="Select all empty meeting chats"
-                >
-                  Select Empty
-                </button>
-              )}
-              <button
-                disabled={selectedChatIds.size === 0}
-                onClick={handleBulkDelete}
-                className={`px-3 py-1 rounded-lg font-semibold flex items-center gap-1.5 transition-all ${
-                  selectedChatIds.size > 0
-                    ? 'bg-red-500 hover:bg-red-600 text-white shadow-xs cursor-pointer'
-                    : 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
-                }`}
-              >
-                <FiTrash2 size={13} />
-                <span>Delete ({selectedChatIds.size})</span>
-              </button>
-            </div>
+          {/* Chat List Items */}
+          <div className="flex-1 overflow-y-auto py-2 space-y-1">
+            {filteredChats.length === 0 ? (
+              <div className="p-8 text-center text-xs text-slate-400 dark:text-slate-500">
+                No conversations found
+              </div>
+            ) : (
+              filteredChats.map(chat => (
+                <ChatListItem
+                  key={chat._id}
+                  chat={chat}
+                  activeChat={activeChat}
+                  setActiveChat={c => {
+                    setActiveFilter('all');
+                    navigate(`/chat/${c._id}`);
+                  }}
+                  currentUser={currentUser}
+                  isMultiSelectMode={isMultiSelectMode}
+                  isSelected={selectedChatIds.has(chat._id)}
+                  onToggleSelect={toggleSelectChat}
+                  onDeleteSingle={handleDeleteSingle}
+                />
+              ))
+            )}
           </div>
-        )}
-
-        {/* Chat List Items */}
-        <div className="flex-1 overflow-y-auto py-2 space-y-1">
-          {filteredChats.length === 0 ? (
-            <div className="p-8 text-center text-xs text-slate-400 dark:text-slate-500">
-              No conversations found
-            </div>
-          ) : (
-            filteredChats.map(chat => (
-              <ChatListItem
-                key={chat._id}
-                chat={chat}
-                activeChat={activeChat}
-                setActiveChat={c => navigate(`/chat/${c._id}`)}
-                currentUser={currentUser}
-                isMultiSelectMode={isMultiSelectMode}
-                isSelected={selectedChatIds.has(chat._id)}
-                onToggleSelect={toggleSelectChat}
-                onDeleteSingle={handleDeleteSingle}
-              />
-            ))
-          )}
         </div>
-      </div>
+      )}
 
       {/* RIGHT CHAT WINDOW (CANVAS) */}
-      {activeFilter === 'contacts' ? (
-        <ContactsView
-          onStartChat={async (user) => {
-            try {
-              const res = await api.post(`/chat/direct/${user._id}`);
-              refetchChats?.();
-              setActiveFilter('direct');
-              navigate(`/chat/${res.data._id}`);
-            } catch {
-              toast.error('Failed to start chat');
-            }
-          }}
-          onOpenProfile={(user) => {
-            setSelectedContactUser(user);
-            setIsProfileModalOpen(true);
-          }}
-        />
-      ) : (
-        <div className="flex-1 flex flex-col bg-white dark:bg-black h-full overflow-hidden relative">
-          {/* Customized Header with E2EE Badge & Profile Drawer */}
-          <div className="h-16 bg-white dark:bg-black border-b border-gray-200 dark:border-slate-800 px-6 flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-sky-500 flex items-center justify-center font-bold text-white shadow-md overflow-hidden">
-                {activeChat.avatar ? (
-                  <img src={activeChat.avatar} alt={activeChat.name} className="w-full h-full object-cover" />
-                ) : (
-                  activeChat.name?.[0]?.toUpperCase() || 'U'
-                )}
-              </div>
-              <div>
-                <h3 className="font-bold text-sm text-gray-900 dark:text-white flex items-center gap-2">
-                  <span>{activeChat.name}</span>
-                  {activeChat.chatType === 'direct' && !isSelfSpace && (
-                    <span className="flex items-center gap-1 text-gray-500 dark:text-gray-400 text-[10px]" title="End-to-End Encrypted">
-                      <FiShield size={11} />
-                    </span>
+      {(!isMobile || hasActiveChat || activeFilter === 'contacts') && (
+        <div className="flex-1 flex flex-col h-full overflow-hidden bg-white dark:bg-black relative">
+          {activeFilter === 'contacts' && !hasActiveChat ? (
+            <ContactsView
+              onBack={() => setActiveFilter('all')}
+              onStartChat={async (user) => {
+                try {
+                  const res = await api.post(`/chat/direct/${user._id}`);
+                  refetchChats?.();
+                  setActiveFilter('all');
+                  navigate(`/chat/${res.data._id}`);
+                } catch {
+                  toast.error('Failed to start chat');
+                }
+              }}
+              onOpenProfile={(user) => {
+                setSelectedContactUser(user);
+                setIsProfileModalOpen(true);
+              }}
+            />
+          ) : (
+            <div className="flex-1 flex flex-col bg-white dark:bg-black h-full overflow-hidden relative">
+              {/* Customized Header with E2EE Badge & Profile Drawer */}
+              <div className="h-14 sm:h-16 bg-white dark:bg-black border-b border-gray-200 dark:border-slate-800 px-3 sm:px-6 flex items-center justify-between shrink-0 gap-2">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                  {/* Back button on mobile */}
+                  {isMobile && (
+                    <button
+                      onClick={() => navigate('/chat')}
+                      className="p-1.5 -ml-1 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0 cursor-pointer"
+                      title="Back to chats"
+                    >
+                      <FiArrowLeft size={18} />
+                    </button>
                   )}
-                  {activeChat.chatType === 'meeting' && (
-                    <span className="flex items-center gap-1 text-gray-500 dark:text-gray-400 text-[10px]" title="Meeting Chat">
-                      <FiVideo size={11} />
-                    </span>
-                  )}
-                  {(activeChat.chatType === 'group' || activeChat.isGroupChat) && (
-                    <span className="flex items-center gap-1 text-gray-500 dark:text-gray-400 text-[10px]" title="Group Chat">
-                      <FiUsers size={11} />
-                    </span>
-                  )}
-                </h3>
-                <p className="text-[11px] text-gray-500 dark:text-slate-400">{windowChat.status || 'Available'}</p>
-              </div>
-            </div>
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-sky-500 flex items-center justify-center font-bold text-white shadow-md overflow-hidden shrink-0">
+                    {activeChat.avatar ? (
+                      <img src={activeChat.avatar} alt={activeChat.name} className="w-full h-full object-cover" />
+                    ) : (
+                      activeChat.name?.[0]?.toUpperCase() || 'U'
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="font-bold text-xs sm:text-sm text-gray-900 dark:text-white flex items-center gap-1.5 sm:gap-2 truncate">
+                      <span className="truncate">{activeChat.name}</span>
+                      {activeChat.chatType === 'direct' && !isSelfSpace && (
+                        <span className="flex items-center gap-1 text-gray-500 dark:text-gray-400 text-[10px] shrink-0" title="End-to-End Encrypted">
+                          <FiShield size={11} />
+                        </span>
+                      )}
+                      {activeChat.chatType === 'meeting' && (
+                        <span className="flex items-center gap-1 text-gray-500 dark:text-gray-400 text-[10px] shrink-0" title="Meeting Chat">
+                          <FiVideo size={11} />
+                        </span>
+                      )}
+                      {(activeChat.chatType === 'group' || activeChat.isGroupChat) && (
+                        <span className="flex items-center gap-1 text-gray-500 dark:text-gray-400 text-[10px] shrink-0" title="Group Chat">
+                          <FiUsers size={11} />
+                        </span>
+                      )}
+                    </h3>
+                    <p className="text-[10px] sm:text-[11px] text-gray-500 dark:text-slate-400 truncate">{windowChat.status || 'Available'}</p>
+                  </div>
+                </div>
 
-            <div className="flex items-center gap-2">
-              {/* Delete / Clear Chat Button in Header */}
-              {!isSelfSpace && (
-                <button
-                  onClick={() => handleDeleteSingle(activeChat)}
-                  className="p-2 text-slate-400 hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all cursor-pointer"
-                  title="Delete Conversation"
-                >
-                  <FiTrash2 size={16} />
-                </button>
+                <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+                  {/* Delete / Clear Chat Button in Header */}
+                  {!isSelfSpace && (
+                    <button
+                      onClick={() => handleDeleteSingle(activeChat)}
+                      className="p-1.5 sm:p-2 text-slate-400 hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all cursor-pointer"
+                      title="Delete Conversation"
+                    >
+                      <FiTrash2 size={15} />
+                    </button>
+                  )}
+
+                  {(() => {
+                    const targetOtherUser = activeChat.otherUser || (Array.isArray(activeChat.participants) ? activeChat.participants.find(p => (p._id?.toString() || p?.toString()) !== currentUser?._id?.toString()) : null);
+                    const isDirectChat = activeChat.chatType === 'direct' || (!activeChat.isGroupChat && activeChat.chatType !== 'meeting');
+
+                    if (!isDirectChat || isSelfSpace || !targetOtherUser) return null;
+
+                    return (
+                      <div className="flex items-center gap-1 sm:gap-2">
+                        <button
+                          onClick={() => initiateCall({ targetUser: targetOtherUser, conversationId: activeChat._id, type: 'voice' })}
+                          className="p-2 sm:px-3 sm:py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-sky-500 hover:text-white text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer"
+                          title="Start Voice Call"
+                        >
+                          <FiPhone size={14} />
+                          <span className="hidden sm:inline">Voice Call</span>
+                        </button>
+                        <button
+                          onClick={() => initiateCall({ targetUser: targetOtherUser, conversationId: activeChat._id, type: 'video' })}
+                          className="p-2 sm:px-3 sm:py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+                          title="Start Video Call"
+                        >
+                          <FiVideo size={14} />
+                          <span className="hidden sm:inline">Video Call</span>
+                        </button>
+                        <button
+                          onClick={() => setIsProfileModalOpen(true)}
+                          className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+                          title="View Contact Profile"
+                        >
+                          <FiInfo size={15} />
+                        </button>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              {isSelfSpace ? (
+                /* PERSONAL SPACE VIEW */
+                <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-8 text-center bg-white dark:bg-black">
+                  <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full bg-sky-100 text-sky-700 dark:bg-sky-950/80 dark:text-sky-300 font-bold text-3xl sm:text-4xl flex items-center justify-center mb-4 sm:mb-6 border-2 border-sky-200 dark:border-sky-800 shadow-xl">
+                    {selfUserInitials}
+                  </div>
+
+                  <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-3 tracking-tight">This is your personal space</h2>
+                  <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 max-w-md leading-relaxed mx-auto px-4">
+                    Use this workspace for personal notes, drafts, and self-sent files across device sessions.
+                  </p>
+                </div>
+              ) : (
+                /* ACTIVE CONVERSATION MESSAGE LIST */
+                <MessageList
+                  chat={windowChat}
+                  emojis={emojis}
+                  reactingToMsg={reactingToMsg}
+                  setReactingToMsg={setReactingToMsg}
+                  handleReact={() => setReactingToMsg(null)}
+                  chatEndRef={chatEndRef}
+                  isReplying={isReplying || historyLoading}
+                  loadMore={loadMore}
+                />
               )}
 
-              {(() => {
-                const targetOtherUser = activeChat.otherUser || (Array.isArray(activeChat.participants) ? activeChat.participants.find(p => (p._id?.toString() || p?.toString()) !== currentUser?._id?.toString()) : null);
-                const isDirectChat = activeChat.chatType === 'direct' || (!activeChat.isGroupChat && activeChat.chatType !== 'meeting');
-
-                if (!isDirectChat || isSelfSpace || !targetOtherUser) return null;
-
-                return (
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => initiateCall({ targetUser: targetOtherUser, conversationId: activeChat._id, type: 'voice' })}
-                      className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-sky-500 hover:text-white text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer"
-                      title="Start Voice Call"
-                    >
-                      <FiPhone size={14} /> Voice Call
-                    </button>
-                    <button
-                      onClick={() => initiateCall({ targetUser: targetOtherUser, conversationId: activeChat._id, type: 'video' })}
-                      className="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
-                      title="Start Video Call"
-                    >
-                      <FiVideo size={14} /> Video Call
-                    </button>
-                    <button
-                      onClick={() => setIsProfileModalOpen(true)}
-                      className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
-                      title="View Contact Profile"
-                    >
-                      <FiInfo size={15} />
-                    </button>
-                  </div>
-                );
-              })()}
+              {/* Bottom Message Input Dock */}
+              <MessageInput
+                newMessage={newMessage}
+                setNewMessage={setNewMessage}
+                sendMessage={() => handleSendMessage()}
+                showEmojiPicker={showEmojiPicker}
+                setShowEmojiPicker={setShowEmojiPicker}
+                emojis={emojis}
+                isReplying={isReplying}
+                sendTypingStart={sendTypingStart}
+                sendTypingStop={sendTypingStop}
+              />
             </div>
-          </div>
-
-          {isSelfSpace ? (
-            /* PERSONAL SPACE VIEW MATCHING REFERENCE IMAGE */
-            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-white dark:bg-black">
-              <div className="w-28 h-28 rounded-full bg-sky-100 text-sky-700 dark:bg-sky-950/80 dark:text-sky-300 font-bold text-4xl flex items-center justify-center mb-6 border-2 border-sky-200 dark:border-sky-800 shadow-2xl">
-                {selfUserInitials}
-              </div>
-
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3 tracking-tight">This is your personal space</h2>
-              <p className="text-sm text-gray-500 dark:text-slate-400 max-w-md leading-relaxed mx-auto">
-                Use this workspace for personal notes, drafts, and self-sent files across device sessions.
-              </p>
-            </div>
-          ) : (
-            /* ACTIVE CONVERSATION MESSAGE LIST */
-            <MessageList
-              chat={windowChat}
-              emojis={emojis}
-              reactingToMsg={reactingToMsg}
-              setReactingToMsg={setReactingToMsg}
-              handleReact={() => setReactingToMsg(null)}
-              chatEndRef={chatEndRef}
-              isReplying={isReplying || historyLoading}
-              loadMore={loadMore}
-            />
           )}
-
-          {/* Bottom Message Input Dock */}
-          <MessageInput
-            newMessage={newMessage}
-            setNewMessage={setNewMessage}
-            sendMessage={() => handleSendMessage()}
-            showEmojiPicker={showEmojiPicker}
-            setShowEmojiPicker={setShowEmojiPicker}
-            emojis={emojis}
-            isReplying={isReplying}
-            sendTypingStart={sendTypingStart}
-            sendTypingStop={sendTypingStop}
-          />
         </div>
       )}
     </div>

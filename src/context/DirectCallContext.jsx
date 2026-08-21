@@ -210,7 +210,7 @@ export const DirectCallProvider = ({ children }) => {
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach(track => {
         pc.addTrack(track, localStreamRef.current);
-        console.log('[WebRTC] Added local track:', track.kind);
+        console.log('[DirectCall] Added local track to peer connection:', track.kind, track.id);
       });
     }
 
@@ -226,7 +226,7 @@ export const DirectCallProvider = ({ children }) => {
 
     // Handle remote track
     pc.ontrack = (event) => {
-      console.log('[WebRTC] Remote track received:', event.track.kind);
+      console.log('[DirectCall] Remote track received:', event.track.kind, event.track.id, 'readyState:', event.track.readyState);
       if (event.streams && event.streams[0]) {
         remoteStreamRef.current = event.streams[0];
       } else {
@@ -297,6 +297,15 @@ export const DirectCallProvider = ({ children }) => {
 
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       localStreamRef.current = stream;
+      const audioTracks = stream.getAudioTracks();
+      const videoTracks = stream.getVideoTracks();
+      console.log(`[DirectCall] Local media acquired (type: ${callType}):`, {
+        audioTracks: audioTracks.map(t => ({ id: t.id, enabled: t.enabled, readyState: t.readyState })),
+        videoTracks: videoTracks.map(t => ({ id: t.id, enabled: t.enabled, readyState: t.readyState }))
+      });
+      if (audioTracks.length > 0) {
+        console.log('[DirectCall] Local audio track created:', audioTracks[0].id, 'enabled:', audioTracks[0].enabled);
+      }
       await updateDeviceList();
       return stream;
     } catch (err) {

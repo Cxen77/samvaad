@@ -36,15 +36,15 @@ const BottomToolbar = ({ session }) => {
 
   return (
     <div className="bottom-toolbar">
-      <div className="bottom-toolbar__inner">
+      <div className="bottom-toolbar__inner overflow-x-auto scrollbar-none flex items-center justify-start md:justify-center w-full max-w-full px-1 sm:px-2 gap-1 sm:gap-1.5">
         {/* Microphone */}
         <button
           onClick={toggleMute}
           disabled={isMeetingSealed}
-          className={`toolbar-control-btn ${isMuted ? 'toolbar-control-btn--danger' : ''}`}
+          className={`toolbar-control-btn shrink-0 ${isMuted ? 'toolbar-control-btn--danger' : ''}`}
           title={isMuted ? 'Unmute' : 'Mute'}
         >
-          {isMuted ? <FiMicOff size={18} /> : <FiMic size={18} />}
+          {isMuted ? <FiMicOff size={17} /> : <FiMic size={17} />}
           <span className="toolbar-control-label">{isMuted ? 'Unmute' : 'Mute'}</span>
         </button>
 
@@ -52,23 +52,23 @@ const BottomToolbar = ({ session }) => {
         <button
           onClick={toggleVideo}
           disabled={isMeetingSealed}
-          className={`toolbar-control-btn ${isVideoOff ? 'toolbar-control-btn--danger' : ''}`}
+          className={`toolbar-control-btn shrink-0 ${isVideoOff ? 'toolbar-control-btn--danger' : ''}`}
           title={isVideoOff ? 'Start Video' : 'Stop Video'}
         >
-          {isVideoOff ? <FiVideoOff size={18} /> : <FiVideo size={18} />}
-          <span className="toolbar-control-label">{isVideoOff ? 'Start Video' : 'Stop Video'}</span>
+          {isVideoOff ? <FiVideoOff size={17} /> : <FiVideo size={17} />}
+          <span className="toolbar-control-label">{isVideoOff ? 'Start' : 'Stop'}</span>
         </button>
 
-        <div className="toolbar-separator" />
+        <div className="toolbar-separator shrink-0" />
 
         {/* Share Screen */}
         <button
           onClick={toggleScreenShare}
           disabled={isMeetingSealed}
-          className={`toolbar-control-btn ${isScreenSharing ? 'toolbar-control-btn--active' : ''}`}
+          className={`toolbar-control-btn shrink-0 ${isScreenSharing ? 'toolbar-control-btn--active' : ''}`}
           title="Share Screen"
         >
-          <FiMonitor size={18} />
+          <FiMonitor size={17} />
           <span className="toolbar-control-label">Share</span>
         </button>
 
@@ -76,26 +76,26 @@ const BottomToolbar = ({ session }) => {
         <button
           onClick={toggleHandRaise}
           disabled={isMeetingSealed}
-          className={`toolbar-control-btn ${handRaised ? 'toolbar-control-btn--amber' : ''}`}
+          className={`toolbar-control-btn shrink-0 ${handRaised ? 'toolbar-control-btn--amber' : ''}`}
           title={handRaised ? 'Lower Hand' : 'Raise Hand'}
         >
-          <HandIcon size={18} />
-          <span className="toolbar-control-label">{handRaised ? 'Lower' : 'Raise Hand'}</span>
+          <HandIcon size={17} />
+          <span className="toolbar-control-label">{handRaised ? 'Lower' : 'Hand'}</span>
         </button>
 
         {/* Reactions */}
-        <div className="relative">
+        <div className="relative shrink-0">
           <button 
             onClick={() => setShowReactions(!showReactions)}
             className="toolbar-control-btn"
             title="Reactions"
           >
-            <FiSmile size={18} />
+            <FiSmile size={17} />
             <span className="toolbar-control-label">React</span>
           </button>
 
           {showReactions && (
-            <div className="absolute bottom-16 left-1/2 -translate-x-1/2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-1.5 shadow-2xl flex gap-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
+            <div className="absolute bottom-14 sm:bottom-16 left-1/2 -translate-x-1/2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-1.5 shadow-2xl flex gap-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
               {QUICK_REACTIONS.map(emoji => (
                 <button
                   key={emoji}
@@ -112,27 +112,27 @@ const BottomToolbar = ({ session }) => {
           )}
         </div>
 
-        <div className="toolbar-separator" />
+        <div className="toolbar-separator shrink-0" />
 
         {/* Chat */}
         <button
           onClick={() => togglePanel('chat')}
-          className={`toolbar-control-btn ${activePanel === 'chat' ? 'toolbar-control-btn--active' : ''}`}
+          className={`toolbar-control-btn shrink-0 ${activePanel === 'chat' ? 'toolbar-control-btn--active' : ''}`}
           title="Meeting Chat"
         >
-          <FiMessageSquare size={18} />
+          <FiMessageSquare size={17} />
           <span className="toolbar-control-label">Chat</span>
         </button>
 
         {/* Participants */}
         <button
           onClick={() => togglePanel('participants')}
-          className={`toolbar-control-btn ${activePanel === 'participants' ? 'toolbar-control-btn--active' : ''}`}
+          className={`toolbar-control-btn shrink-0 ${activePanel === 'participants' ? 'toolbar-control-btn--active' : ''}`}
           title="Participants"
         >
           <div className="relative">
-            <FiUsers size={18} />
-            <span className="absolute -top-1.5 -right-2 bg-sky-600 text-white font-bold text-[9px] w-3.5 h-3.5 rounded-full flex items-center justify-center">
+            <FiUsers size={17} />
+            <span className="absolute -top-1.5 -right-2 bg-sky-600 text-white font-bold text-[8px] sm:text-[9px] w-3.5 h-3.5 rounded-full flex items-center justify-center">
               {participants.length}
             </span>
           </div>
@@ -142,31 +142,31 @@ const BottomToolbar = ({ session }) => {
         {/* Voting */}
         <button
           onClick={() => togglePanel('voting')}
-          className={`toolbar-control-btn ${activePanel === 'voting' ? 'toolbar-control-btn--active' : ''}`}
+          className={`toolbar-control-btn shrink-0 ${activePanel === 'voting' ? 'toolbar-control-btn--active' : ''}`}
           title="Committee Voting"
         >
-          <FiBarChart2 size={18} />
+          <FiBarChart2 size={17} />
           <span className="toolbar-control-label">Voting</span>
         </button>
 
         {/* Dossier Documents */}
         <button
           onClick={() => togglePanel('dossier')}
-          className={`toolbar-control-btn ${activePanel === 'dossier' ? 'toolbar-control-btn--active' : ''}`}
+          className={`toolbar-control-btn shrink-0 ${activePanel === 'dossier' ? 'toolbar-control-btn--active' : ''}`}
           title="Dossier Attachments"
         >
-          <FiFileText size={18} />
+          <FiFileText size={17} />
           <span className="toolbar-control-label">Dossier</span>
         </button>
 
         {/* AI Live Transcript Notes */}
         <button
           onClick={() => togglePanel('transcript')}
-          className={`toolbar-control-btn relative ${activePanel === 'transcript' ? 'toolbar-control-btn--active' : ''}`}
+          className={`toolbar-control-btn relative shrink-0 ${activePanel === 'transcript' ? 'toolbar-control-btn--active' : ''}`}
           title="AI Live Notes"
         >
           <div className="relative">
-            <FiCpu size={18} />
+            <FiCpu size={17} />
             {isTranscribing && (
               <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-500 animate-pulse" />
             )}
@@ -178,32 +178,32 @@ const BottomToolbar = ({ session }) => {
         {isHost ? (
           <button
             onClick={() => togglePanel('host')}
-            className={`toolbar-control-btn ${activePanel === 'host' ? 'toolbar-control-btn--active' : ''}`}
+            className={`toolbar-control-btn shrink-0 ${activePanel === 'host' ? 'toolbar-control-btn--active' : ''}`}
             title="Host Controls"
           >
-            <FiShield size={18} />
+            <FiShield size={17} />
             <span className="toolbar-control-label">Host</span>
           </button>
         ) : (
           <button
             onClick={() => togglePanel('settings')}
-            className={`toolbar-control-btn ${activePanel === 'settings' ? 'toolbar-control-btn--active' : ''}`}
+            className={`toolbar-control-btn shrink-0 ${activePanel === 'settings' ? 'toolbar-control-btn--active' : ''}`}
             title="Settings"
           >
-            <FiSliders size={18} />
+            <FiSliders size={17} />
             <span className="toolbar-control-label">Settings</span>
           </button>
         )}
 
-        <div className="toolbar-separator" />
+        <div className="toolbar-separator shrink-0" />
 
         {/* Leave / End Meeting Button */}
         <button
           onClick={() => setShowEndModal(true)}
-          className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold text-xs transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-red-600/20 ml-1 shrink-0"
+          className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold text-xs transition-all cursor-pointer flex items-center gap-1 sm:gap-1.5 shadow-md shadow-red-600/20 ml-1 shrink-0"
           title={isHost ? 'End Meeting' : 'Leave Meeting'}
         >
-          <FiPhoneOff size={14} />
+          <FiPhoneOff size={13} />
           <span>{isHost ? 'End' : 'Leave'}</span>
         </button>
       </div>

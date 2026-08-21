@@ -227,38 +227,38 @@ const SmartWaitingRoom = () => {
     const initials = currentUser?.name ? currentUser.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'ME';
 
     return (
-        <div className="min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-white flex flex-col items-center justify-center p-4 md:p-8 font-sans transition-colors duration-200">
-            <div className="w-full max-w-4xl bg-white dark:bg-slate-900/90 backdrop-blur-md rounded-3xl p-6 md:p-8 shadow-2xl border border-slate-200 dark:border-slate-800/80 space-y-6 animate-in fade-in zoom-in-95 duration-200">
+        <div className="min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-white flex flex-col items-center justify-start md:justify-center p-3 sm:p-6 md:p-8 font-sans overflow-y-auto transition-colors duration-200">
+            <div className="w-full max-w-4xl bg-white dark:bg-slate-900/90 backdrop-blur-md rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 md:p-8 shadow-2xl border border-slate-200 dark:border-slate-800/80 space-y-3.5 sm:space-y-6 animate-in fade-in zoom-in-95 duration-200 my-auto">
                 {/* Header: Topic, Room ID, Security */}
-                <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-2xl bg-sky-600/15 dark:bg-sky-600/20 border border-sky-500/30 text-sky-600 dark:text-sky-400 flex items-center justify-center shadow-inner">
-                            <FiShield size={20} />
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2.5 sm:pb-4 gap-2.5 sm:gap-3">
+                    <div className="flex items-center gap-2.5 sm:gap-3">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-sky-600/15 dark:bg-sky-600/20 border border-sky-500/30 text-sky-600 dark:text-sky-400 flex items-center justify-center shadow-inner shrink-0">
+                            <FiShield size={16} />
                         </div>
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <h1 className="text-lg md:text-xl font-bold text-slate-900 dark:text-white tracking-tight">{meeting.title || 'AICTE Hearing'}</h1>
-                            </div>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">
-                                Meeting ID: <span className="font-mono text-slate-800 dark:text-slate-200 font-semibold">{roomId}</span>
-                                {meeting.institute && <span className="ml-2">• {meeting.institute}</span>}
+                        <div className="min-w-0 flex-1">
+                            <h1 className="text-sm sm:text-lg md:text-xl font-bold text-slate-900 dark:text-white tracking-tight truncate">
+                                {meeting.title || 'AICTE Hearing'}
+                            </h1>
+                            <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 truncate">
+                                ID: <span className="font-mono text-slate-800 dark:text-slate-200 font-semibold">{roomId}</span>
+                                {meeting.institute && <span className="ml-1.5">• {meeting.institute}</span>}
                             </p>
                         </div>
                     </div>
 
                     <button 
                         onClick={handleCancel}
-                        className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl border border-slate-300 dark:border-slate-700 transition-colors flex items-center gap-1.5 cursor-pointer"
+                        className="px-2.5 py-1 sm:px-3.5 sm:py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[11px] sm:text-xs font-semibold rounded-xl border border-slate-300 dark:border-slate-700 transition-colors flex items-center justify-center gap-1.5 cursor-pointer self-start sm:self-auto"
                     >
-                        <FiArrowLeft size={14} /> Back to Samvaad
+                        <FiArrowLeft size={13} /> Back to Samvaad
                     </button>
                 </div>
 
-                {/* Main 2-Column Stage (Zoom & Teams style) */}
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-                    {/* Left 7 cols: Video Camera Preview */}
+                {/* Main Stage Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 sm:gap-6 items-start">
+                    {/* Left (Desktop 7 cols): Video Camera Preview */}
                     <div className="md:col-span-7 space-y-3">
-                        <div className="bg-slate-900 rounded-2xl overflow-hidden aspect-video relative flex items-center justify-center border border-slate-300 dark:border-slate-800 shadow-2xl group">
+                        <div className="bg-slate-900 rounded-xl sm:rounded-2xl overflow-hidden aspect-video relative flex items-center justify-center border border-slate-300 dark:border-slate-800 shadow-xl group">
                             {isCameraOn ? (
                                 <video 
                                     ref={videoRef}
@@ -268,46 +268,46 @@ const SmartWaitingRoom = () => {
                                     className="w-full h-full object-cover mirror"
                                 />
                             ) : (
-                                <div className="text-center space-y-3">
-                                    <div className="w-20 h-20 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center font-bold text-2xl text-slate-300 mx-auto shadow-lg">
+                                <div className="text-center space-y-2 sm:space-y-3">
+                                    <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center font-bold text-lg sm:text-2xl text-slate-300 mx-auto shadow-lg">
                                         {initials}
                                     </div>
                                     <p className="text-xs text-slate-400 font-medium">Camera is off</p>
                                 </div>
                             )}
 
-                            {/* Floating Media Controls on Camera Preview (Zoom / Teams Style) */}
-                            <div className="absolute bottom-4 inset-x-0 flex items-center justify-center gap-3">
+                            {/* Floating Media Controls on Camera Preview */}
+                            <div className="absolute bottom-2 sm:bottom-4 inset-x-0 flex items-center justify-center gap-2 sm:gap-3">
                                 <button
                                     onClick={toggleMic}
-                                    className={`px-4 py-2.5 rounded-full shadow-xl backdrop-blur-md transition-all flex items-center gap-2 text-xs font-semibold cursor-pointer ${
+                                    className={`px-3 sm:px-4 py-1.5 sm:py-2.5 rounded-full shadow-xl backdrop-blur-md transition-all flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold cursor-pointer ${
                                         isMicOn 
                                           ? 'bg-slate-800/90 hover:bg-slate-700 text-white border border-slate-700/80' 
                                           : 'bg-red-600 hover:bg-red-700 text-white'
                                     }`}
                                     title={isMicOn ? 'Mute Microphone' : 'Unmute Microphone'}
                                 >
-                                    {isMicOn ? <FiMic size={15} /> : <FiMicOff size={15} />}
+                                    {isMicOn ? <FiMic size={14} /> : <FiMicOff size={14} />}
                                     <span>{isMicOn ? 'Mute' : 'Unmuted'}</span>
                                 </button>
 
                                 <button
                                     onClick={toggleCamera}
-                                    className={`px-4 py-2.5 rounded-full shadow-xl backdrop-blur-md transition-all flex items-center gap-2 text-xs font-semibold cursor-pointer ${
+                                    className={`px-3 sm:px-4 py-1.5 sm:py-2.5 rounded-full shadow-xl backdrop-blur-md transition-all flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold cursor-pointer ${
                                         isCameraOn 
                                           ? 'bg-slate-800/90 hover:bg-slate-700 text-white border border-slate-700/80' 
                                           : 'bg-red-600 hover:bg-red-700 text-white'
                                     }`}
                                     title={isCameraOn ? 'Turn Video Off' : 'Turn Video On'}
                                 >
-                                    {isCameraOn ? <FiVideo size={15} /> : <FiVideoOff size={15} />}
+                                    {isCameraOn ? <FiVideo size={14} /> : <FiVideoOff size={14} />}
                                     <span>{isCameraOn ? 'Stop Video' : 'Start Video'}</span>
                                 </button>
                             </div>
                         </div>
 
-                        {/* Device Selector Dropdowns */}
-                        <div className="bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800/90 rounded-2xl p-3.5 space-y-2.5 text-xs">
+                        {/* Desktop-Only Device Selector Dropdowns */}
+                        <div className="hidden md:block bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800/90 rounded-2xl p-3.5 space-y-2 text-xs">
                             <div className="flex items-center justify-between text-slate-700 dark:text-slate-400 font-semibold text-[11px] pb-1 border-b border-slate-200 dark:border-slate-800">
                                 <span>Audio & Video Settings</span>
                                 <FiSettings size={13} />
@@ -348,15 +348,16 @@ const SmartWaitingRoom = () => {
                         </div>
                     </div>
 
-                    {/* Right 5 cols: Pre-flight Verification & Join Action */}
-                    <div className="md:col-span-5 flex flex-col justify-between space-y-4">
-                        <div className="space-y-3 bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800/90 rounded-2xl p-4">
+                    {/* Right (Desktop 5 cols): Pre-flight Verification & Join Action */}
+                    <div className="md:col-span-5 flex flex-col justify-between space-y-3 sm:space-y-4">
+                        {/* Desktop-Only Pre-flight Checks */}
+                        <div className="hidden md:block space-y-2.5 sm:space-y-3 bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800/90 rounded-2xl p-4">
                             <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800 pb-2 flex items-center justify-between">
                                 <span>Pre-flight Checks</span>
                                 <span className="text-[10px] text-sky-600 dark:text-sky-400 font-semibold">Ready</span>
                             </h2>
 
-                            <div className="space-y-2 text-xs">
+                            <div className="space-y-1.5 sm:space-y-2 text-xs">
                                 <CheckItem icon={FiCamera} label="Video Device" status={checks.camera} />
                                 <CheckItem icon={FiMic} label="Audio Input" status={checks.mic} />
                                 <CheckItem icon={FiWifi} label="Network Connection" status={checks.network} />
@@ -364,34 +365,34 @@ const SmartWaitingRoom = () => {
                             </div>
                         </div>
 
-                        {/* Join Action Card */}
-                        <div className="p-4 bg-slate-50 dark:bg-slate-900/90 rounded-2xl border border-slate-200 dark:border-slate-800/90 space-y-3">
+                        {/* Join Action Card — Placed Right in Frame on Mobile */}
+                        <div className="p-3 sm:p-4 bg-slate-50 dark:bg-slate-900/90 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-800/90 space-y-2.5 sm:space-y-3">
                             {/* Passcode Input if Required */}
                             {hasPassword && (
-                                <div className="p-3 bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800/80 rounded-xl space-y-1.5">
-                                    <label className="block text-[11px] font-semibold text-sky-800 dark:text-sky-300 flex items-center gap-1.5">
-                                        <FiKey size={13} /> Meeting Passcode Required
+                                <div className="p-2 sm:p-3 bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800/80 rounded-xl space-y-1">
+                                    <label className="block text-[10px] sm:text-[11px] font-semibold text-sky-800 dark:text-sky-300 flex items-center gap-1.5">
+                                        <FiKey size={12} /> Meeting Passcode Required
                                     </label>
                                     <input 
                                         type="password"
                                         value={enteredPasscode}
                                         onChange={e => setEnteredPasscode(e.target.value)}
-                                        placeholder="Enter meeting passcode to join"
-                                        className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-sky-500 font-mono"
+                                        placeholder="Enter passcode"
+                                        className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-sky-500 font-mono"
                                         onKeyDown={e => e.key === 'Enter' && handleJoin()}
                                     />
                                 </div>
                             )}
 
-                            <div className="flex items-center justify-between text-xs">
-                                <span className="text-slate-600 dark:text-slate-400">Audio / Video:</span>
-                                <span className="font-semibold text-sky-600 dark:text-sky-400 flex items-center gap-2">
+                            <div className="flex items-center justify-between text-[11px] sm:text-xs">
+                                <span className="text-slate-600 dark:text-slate-400 font-medium">Status:</span>
+                                <span className="font-semibold text-sky-600 dark:text-sky-400 flex items-center gap-1.5">
                                     <span className="flex items-center gap-1 text-slate-800 dark:text-white">
-                                        <FiVideo size={12} /> {isCameraOn ? 'Video ON' : 'Video OFF'}
+                                        <FiVideo size={11} /> {isCameraOn ? 'ON' : 'OFF'}
                                     </span>
                                     <span>•</span>
                                     <span className="flex items-center gap-1 text-slate-800 dark:text-white">
-                                        <FiMic size={12} /> {isMicOn ? 'Mic ON' : 'Muted'}
+                                        <FiMic size={11} /> {isMicOn ? 'Mic ON' : 'Muted'}
                                     </span>
                                 </span>
                             </div>
@@ -399,15 +400,65 @@ const SmartWaitingRoom = () => {
                             <button 
                                 onClick={handleJoin}
                                 disabled={isJoining}
-                                className="w-full py-3.5 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white rounded-xl font-bold text-sm shadow-xl shadow-sky-600/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                                className="w-full py-2.5 sm:py-3.5 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white rounded-xl font-bold text-xs sm:text-sm shadow-lg shadow-sky-600/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
                             >
-                                <FiVideo size={17} className="text-white" /> {isJoining ? 'Joining...' : 'Join Meeting Now'}
+                                <FiVideo size={15} className="text-white" /> {isJoining ? 'Joining...' : 'Join Meeting Now'}
                             </button>
 
                             <p className="text-[10px] text-center text-slate-500 dark:text-slate-400 flex items-center justify-center gap-1">
-                                <FiLock size={11} className="text-sky-600 dark:text-sky-400" /> DTLS-SRTP encryption & audit logging active.
+                                <FiLock size={10} className="text-sky-600 dark:text-sky-400" /> DTLS-SRTP encryption active.
                             </p>
                         </div>
+
+                        {/* Mobile-Only Expandable Settings & Preflight Accordion */}
+                        <details className="md:hidden bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800/90 rounded-xl p-3 text-xs space-y-2.5 cursor-pointer">
+                            <summary className="font-semibold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                                <span className="flex items-center gap-1.5 text-xs"><FiSettings size={13} className="text-sky-500" /> Hardware & Pre-flight Checks</span>
+                                <span className="text-[10px] text-sky-600 dark:text-sky-400 font-bold">Details</span>
+                            </summary>
+
+                            {/* Dropdowns */}
+                            <div className="pt-2 border-t border-slate-200 dark:border-slate-800 grid grid-cols-1 gap-2">
+                                <div>
+                                    <label className="block text-[10px] font-semibold text-slate-600 dark:text-slate-400 mb-1 flex items-center gap-1">
+                                        <FiMic size={11} className="text-sky-500" /> Microphone
+                                    </label>
+                                    <select 
+                                        value={selectedAudioInput}
+                                        onChange={e => setSelectedAudioInput(e.target.value)}
+                                        className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg px-2 py-1 text-xs text-slate-800 dark:text-slate-200"
+                                    >
+                                        {audioInputs.length === 0 && <option value="">Default Microphone</option>}
+                                        {audioInputs.map(d => (
+                                             <option key={d.deviceId} value={d.deviceId}>{d.label || `Microphone ${d.deviceId.substring(0, 5)}`}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-semibold text-slate-600 dark:text-slate-400 mb-1 flex items-center gap-1">
+                                        <FiVideo size={11} className="text-sky-500" /> Camera
+                                    </label>
+                                    <select 
+                                        value={selectedVideoInput}
+                                        onChange={e => setSelectedVideoInput(e.target.value)}
+                                        className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg px-2 py-1 text-xs text-slate-800 dark:text-slate-200"
+                                    >
+                                        {videoInputs.length === 0 && <option value="">Integrated Camera</option>}
+                                        {videoInputs.map(d => (
+                                            <option key={d.deviceId} value={d.deviceId}>{d.label || `Camera ${d.deviceId.substring(0, 5)}`}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Checks List */}
+                            <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-1.5">
+                                <CheckItem icon={FiCamera} label="Video Device" status={checks.camera} />
+                                <CheckItem icon={FiMic} label="Audio Input" status={checks.mic} />
+                                <CheckItem icon={FiWifi} label="Network Connection" status={checks.network} />
+                                <CheckItem icon={FiUserCheck} label="AICTE Identity" status={checks.identity} />
+                            </div>
+                        </details>
                     </div>
                 </div>
             </div>

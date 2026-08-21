@@ -967,7 +967,12 @@ export const useMeetingSession = () => {
   // ================================================================
   const [layout, setLayout] = useState('gallery');
   const [activePanel, setActivePanel] = useState('chat');
-  const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
+  const [isPanelCollapsed, setIsPanelCollapsed] = useState(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      return true; // Keep panel closed on mobile upon joining so video stage is visible
+    }
+    return false;
+  });
   const [showEndModal, setShowEndModal] = useState(false);
   const [showSummaryScreen, setShowSummaryScreen] = useState(false);
 

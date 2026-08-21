@@ -98,20 +98,20 @@ const SamvaadLayout = () => {
   return (
     <div className="flex flex-col h-screen bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans overflow-hidden">
       {/* Top Bar */}
-      <div className="h-16 w-full bg-white dark:bg-slate-900 flex items-center justify-between px-6 shrink-0 z-40 text-slate-800 dark:text-slate-100 border-b border-slate-200 dark:border-slate-800 transition-colors">
-        <div className="flex items-center gap-2 text-base font-semibold tracking-tight text-slate-800 dark:text-slate-100 shrink-0">
+      <div className="h-14 sm:h-16 w-full bg-white dark:bg-slate-900 flex items-center justify-between px-3 sm:px-6 shrink-0 z-40 text-slate-800 dark:text-slate-100 border-b border-slate-200 dark:border-slate-800 transition-colors">
+        <div className="flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base font-semibold tracking-tight text-slate-800 dark:text-slate-100 shrink-0">
           <span className="text-sky-600 font-bold">AICTE</span>
           <span className="text-slate-400 dark:text-slate-500 font-normal">|</span>
           <span>Samvaad</span>
         </div>
 
-        {/* Search Bar (Enlarged & High Visibility) */}
-        <div className="flex-1 max-w-xl mx-4 md:mx-8 relative" ref={searchRef}>
+        {/* Search Bar (Desktop Only — on mobile it is placed below the clock on Home page) */}
+        <div className="hidden md:block flex-1 max-w-xl mx-4 md:mx-8 relative" ref={searchRef}>
           <div className="relative flex items-center">
             <FiSearch 
-              size={18} 
+              size={16} 
               strokeWidth={2} 
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-sky-600 dark:text-sky-400 pointer-events-none" 
+              className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-sky-600 dark:text-sky-400 pointer-events-none" 
             />
             <input
               ref={searchInputRef}
@@ -119,16 +119,16 @@ const SamvaadLayout = () => {
               value={searchQuery}
               onChange={e => { setSearchQuery(e.target.value); setSearchOpen(true); }}
               onFocus={() => setSearchOpen(true)}
-              placeholder="Search meetings, institutes, notes..."
-              className="w-full bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-xl py-2.5 pl-12 pr-10 text-sm font-medium outline-none focus:bg-white dark:focus:bg-black focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 border border-slate-200 dark:border-slate-800 transition-all shadow-xs"
+              placeholder="Search meetings, notes..."
+              className="w-full bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-xl py-2 sm:py-2.5 pl-9 sm:pl-12 pr-8 sm:pr-10 text-xs sm:text-sm font-medium outline-none focus:bg-white dark:focus:bg-black focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 border border-slate-200 dark:border-slate-800 transition-all shadow-xs"
             />
             {searchQuery && (
               <button 
                 onClick={() => { setSearchQuery(''); setSearchOpen(false); }} 
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
                 title="Clear search"
               >
-                <FiX size={16} />
+                <FiX size={14} />
               </button>
             )}
           </div>
@@ -235,9 +235,9 @@ const SamvaadLayout = () => {
                   </div>
                 </div>
                 <div className="py-1">
-                  <button onClick={() => { navigate('/profile'); setProfileOpen(false); }} className="w-full flex items-center gap-2.5 px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs text-slate-700 dark:text-slate-300"><FiUser size={14} />Profile</button>
-                  <button onClick={() => { navigate('/more'); setProfileOpen(false); }} className="w-full flex items-center gap-2.5 px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs text-slate-700 dark:text-slate-300"><FiShield size={14} />Security</button>
-                  <button onClick={() => { navigate('/settings'); setProfileOpen(false); }} className="w-full flex items-center gap-2.5 px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs text-slate-700 dark:text-slate-300"><FiSettings size={14} />Settings</button>
+                  <button onClick={() => { navigate('/profile'); setProfileOpen(false); }} className="w-full flex items-center gap-2.5 px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs text-slate-700 dark:text-slate-300 cursor-pointer transition-colors"><FiUser size={14} />Profile</button>
+                  <button onClick={() => { navigate('/settings'); setProfileOpen(false); }} className="w-full flex items-center gap-2.5 px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs text-slate-700 dark:text-slate-300 cursor-pointer transition-colors"><FiSettings size={14} />Settings</button>
+                  <button onClick={() => { navigate('/more'); setProfileOpen(false); }} className="w-full flex items-center gap-2.5 px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs text-slate-700 dark:text-slate-300 cursor-pointer transition-colors"><FiMoreHorizontal size={14} />More</button>
                 </div>
                 <div className="border-t border-slate-200 dark:border-slate-800">
                   <button onClick={handleLogout} className="w-full flex items-center gap-2.5 px-3.5 py-2 hover:bg-red-50 dark:hover:bg-red-950/30 text-xs text-red-600 dark:text-red-400"><FiLogOut size={14} />Sign Out</button>
@@ -249,8 +249,8 @@ const SamvaadLayout = () => {
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar */}
-        <div className={`${isMenuExpanded ? 'w-[190px]' : 'w-[60px]'} bg-white dark:bg-[#080d1a] flex flex-col py-3 shrink-0 z-50 border-r border-slate-200 dark:border-slate-800 transition-all duration-200`}>
+        {/* Left Sidebar (Desktop Only) */}
+        <div className={`hidden md:flex ${isMenuExpanded ? 'w-[190px]' : 'w-[60px]'} bg-white dark:bg-[#080d1a] flex-col py-3 shrink-0 z-50 border-r border-slate-200 dark:border-slate-800 transition-all duration-200`}>
           <div className="flex flex-col gap-2 w-full px-2">
             {/* Menu Open/Close Button above Home */}
             <button
@@ -287,6 +287,51 @@ const SamvaadLayout = () => {
           </div>
         </div>
       </div>
+
+      {/* Mobile Bottom Navigation Bar (Bottom Navigation on Mobile) */}
+      <nav aria-label="Mobile Navigation" className="md:hidden flex items-center justify-around h-14 bg-white dark:bg-[#080d1a] border-t border-slate-200 dark:border-slate-800 shrink-0 z-40 px-1">
+        <NavLink
+          to="/"
+          end
+          title="Home"
+          className={({ isActive }) => `flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-colors ${isActive ? 'text-sky-600 dark:text-sky-400 font-semibold' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`}
+        >
+          <FiHome size={18} />
+          <span className="text-[10px] mt-0.5">Home</span>
+        </NavLink>
+        <NavLink
+          to="/calendar"
+          title="Calendar"
+          className={({ isActive }) => `flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-colors ${isActive ? 'text-sky-600 dark:text-sky-400 font-semibold' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`}
+        >
+          <FiCalendar size={18} />
+          <span className="text-[10px] mt-0.5">Calendar</span>
+        </NavLink>
+        <NavLink
+          to="/chat"
+          title="Chat"
+          className={({ isActive }) => `flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-colors ${isActive ? 'text-sky-600 dark:text-sky-400 font-semibold' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`}
+        >
+          <FiMessageSquare size={18} />
+          <span className="text-[10px] mt-0.5">Chat</span>
+        </NavLink>
+        <NavLink
+          to="/scheduler"
+          title="Scheduler"
+          className={({ isActive }) => `flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-colors ${isActive ? 'text-sky-600 dark:text-sky-400 font-semibold' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`}
+        >
+          <FiClock size={18} />
+          <span className="text-[10px] mt-0.5">Scheduler</span>
+        </NavLink>
+        <NavLink
+          to="/hub"
+          title="Hub"
+          className={({ isActive }) => `flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-colors ${isActive ? 'text-sky-600 dark:text-sky-400 font-semibold' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`}
+        >
+          <FiGrid size={18} />
+          <span className="text-[10px] mt-0.5">Hub</span>
+        </NavLink>
+      </nav>
     </div>
   );
 };
