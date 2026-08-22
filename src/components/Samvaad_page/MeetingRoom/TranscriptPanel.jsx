@@ -69,19 +69,19 @@ const TranscriptPanel = ({
     }
 
     setIsSummarizing(true);
+    const toastId = toast.loading('Generating summary...');
     try {
       const fullText = transcripts.map(t => `[${t.time}] ${t.speaker}: ${t.text}`).join('\n');
       const res = await api.post('/ai/summarize', { transcript: fullText });
       if (res.data?.success && res.data?.data) {
         setAiSummary(res.data.data);
         setShowSummary(true);
-        toast.success('AI Summary generated');
+        toast.success('Summary generated', { id: toastId });
       } else {
-        toast.error(res.data?.message || 'Failed to generate summary');
+        toast.error(res.data?.message || 'Unable to generate summary. Please try again.', { id: toastId });
       }
     } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to generate AI summary';
-      toast.error(msg);
+      toast.error('Unable to generate summary. Please try again.', { id: toastId });
     } finally {
       setIsSummarizing(false);
     }

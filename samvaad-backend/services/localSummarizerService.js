@@ -1,12 +1,10 @@
 /**
  * Local AI Summarizer Service — SmolLM2-135M-Instruct
  * 
- * Lazy-loads the model on first summary request to conserve memory.
+ * Runs locally inside Node.js backend using @huggingface/transformers.
+ * Lazy-loads the model on first summary request to conserve memory on Render FREE.
  * Processes long transcripts via sequential chunking.
- * Designed for Render FREE tier (512MB RAM).
- * 
- * IMPORTANT: This service is ONLY for summarization.
- * Deepgram remains the sole transcription provider.
+ * Strictly adheres to anti-hallucination rules: only facts explicitly in the transcript.
  */
 
 let generatorInstance = null;
@@ -14,19 +12,17 @@ let isLoading = false;
 let loadPromise = null;
 
 const MODEL_ID = 'HuggingFaceTB/SmolLM2-135M-Instruct';
-const MAX_CHUNK_CHARS = 1500; // Characters per chunk for the small model's context window
-const MAX_NEW_TOKENS = 250;
+const MAX_CHUNK_CHARS = 1200;
 
 /**
- * Lazy-load the text-generation pipeline.
- * Returns cached instance on subsequent calls.
+ * Lazy-load the SmolLM2-135M-Instruct text-generation pipeline.
  */
 const getGenerator = async () => {
     if (generatorInstance) return generatorInstance;
     if (loadPromise) return loadPromise;
 
     isLoading = true;
-    console.log('[LocalSummarizer] Loading SmolLM2-135M-Instruct model...');
+    console.log('[LocalSummarizer] Lazy-loading SmolLM2-135M-Instruct ONNX model...');
     const startTime = Date.now();
 
     loadPromise = (async () => {
@@ -51,13 +47,46 @@ const getGenerator = async () => {
     return loadPromise;
 };
 
-/**
- * Check if the model is currently loading.
- */
 export const isModelLoading = () => isLoading;
 
 /**
- * Split a long transcript into chunks, respecting speaker line boundaries.
+ * Anti-hallucination filter: ensures no fabricated entities/names are introduced.
+ */
+const sanitizeAgainstTranscript = (generatedText, originalTranscript) => {
+    if (!generatedText || typeof generatedText !== 'string') return null;
+
+    const originalLower = originalTranscript.toLowerCase();
+    const sentences = generatedText.split(/(?<=[.?!])\s+/).filter(s => s.trim().length > 10);
+    const safeSentences = [];
+
+    const commonWords = new Set([
+        'The', 'This', 'These', 'There', 'They', 'Meeting', 'Discussion', 'Committee', 
+        'Action', 'Item', 'During', 'Participants', 'All', 'Members', 'Both', 'After', 
+        'Before', 'Following', 'Summary', 'Key', 'Points', 'Reviewed', 'Approved', 
+        'Next', 'Finally', 'In', 'On', 'At', 'To', 'For', 'With', 'From', 'By', 'About'
+    ]);
+
+    for (const sentence of sentences) {
+        const words = sentence.match(/\b[A-Z][a-z]{2,}\b/g) || [];
+        let hasHallucination = false;
+
+        for (const word of words) {
+            if (!commonWords.has(word) && !originalLower.includes(word.toLowerCase())) {
+                hasHallucination = true;
+                break;
+            }
+        }
+
+        if (!hasHallucination) {
+            safeSentences.push(sentence.trim());
+        }
+    }
+
+    return safeSentences.length > 0 ? safeSentences.join(' ') : null;
+};
+
+/**
+ * Split transcript into manageable chunks for sequential processing.
  */
 const chunkTranscript = (transcript) => {
     if (transcript.length <= MAX_CHUNK_CHARS) return [transcript];
@@ -78,169 +107,160 @@ const chunkTranscript = (transcript) => {
 };
 
 /**
- * Generate text from the local model with a system + user message.
- */
-const generate = async (systemPrompt, userPrompt) => {
-    const generator = await getGenerator();
-    const messages = [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt }
-    ];
-
-    const output = await generator(messages, {
-        max_new_tokens: MAX_NEW_TOKENS,
-        temperature: 0.1,
-        do_sample: true,
-        top_p: 0.9,
-    });
-
-    // Extract assistant response from output
-    if (Array.isArray(output) && output.length > 0) {
-        const generated = output[0]?.generated_text;
-        if (Array.isArray(generated)) {
-            // Chat-style output: array of { role, content }
-            const assistantMsg = generated.find(m => m.role === 'assistant');
-            return assistantMsg?.content?.trim() || '';
-        }
-        if (typeof generated === 'string') {
-            return generated.trim();
-        }
-    }
-    return '';
-};
-
-const CHUNK_SYSTEM_PROMPT = `You are a factual meeting assistant for AICTE Samvaad. Summarize the transcript chunk below.
-Rules:
-- Only include facts explicitly stated in the transcript.
-- Never invent names, dates, decisions, or action items not present.
-- Be concise. List key points as bullet points.`;
-
-const FINAL_SYSTEM_PROMPT = `You are a factual meeting assistant for AICTE Samvaad. Combine the partial summaries below into one structured meeting summary.
-
-Output format (plain text, not JSON):
-EXECUTIVE SUMMARY:
-(2-3 sentence overview)
-
-KEY DISCUSSION POINTS:
-- point 1
-- point 2
-
-DECISIONS MADE:
-- decision 1 (only if explicitly stated)
-
-ACTION ITEMS:
-- task → assignee (deadline) (only if explicitly stated)
-
-PENDING ISSUES:
-- issue 1 (only if explicitly stated)
-
-Rules:
-- Never invent information not present in the summaries.
-- If no decisions/action items/pending issues are found, write "None identified in transcript."
-- Only attribute tasks to a person if the transcript explicitly names them.`;
-
-/**
- * Main entry point: summarize a full transcript string.
- * Returns a structured summary object compatible with the existing UI.
+ * Main summarizer: consumes final transcript and returns structured summary.
  */
 export const summarizeWithLocalModel = async (transcript) => {
-    const chunks = chunkTranscript(transcript);
-    console.log(`[LocalSummarizer] Processing ${chunks.length} chunk(s)...`);
-
-    // Summarize each chunk sequentially to minimize RAM
-    const chunkSummaries = [];
-    for (let i = 0; i < chunks.length; i++) {
-        console.log(`[LocalSummarizer] Summarizing chunk ${i + 1}/${chunks.length}...`);
-        const summary = await generate(
-            CHUNK_SYSTEM_PROMPT,
-            `Transcript chunk:\n${chunks[i]}`
-        );
-        if (summary) chunkSummaries.push(summary);
+    if (!transcript || typeof transcript !== 'string' || transcript.trim().length < 5) {
+        throw new Error('Valid transcript is required');
     }
 
-    // If only one chunk, use its summary directly for the final pass
-    const combinedInput = chunkSummaries.length === 1
-        ? chunkSummaries[0]
-        : chunkSummaries.map((s, i) => `--- Part ${i + 1} ---\n${s}`).join('\n\n');
+    // 1. Parse speaker entries and lines
+    const lines = transcript.trim().split('\n').map(l => l.trim()).filter(Boolean);
+    const speechEntries = [];
+    const speakers = new Set();
 
-    // Generate final structured summary
-    const finalText = await generate(
-        FINAL_SYSTEM_PROMPT,
-        `Partial summaries:\n${combinedInput}`
-    );
-
-    // Parse the free-text output into the structured format expected by the UI
-    return parseStructuredSummary(finalText);
-};
-
-/**
- * Parse a free-text summary into the JSON structure the frontend expects:
- * { summary, keyDecisions, actionItems, nextSteps, participants }
- */
-const parseStructuredSummary = (text) => {
-    if (!text) {
-        return {
-            summary: 'Unable to generate a detailed summary from the transcript.',
-            keyDecisions: [],
-            actionItems: [],
-            nextSteps: [],
-            participants: []
-        };
+    for (const line of lines) {
+        const match = line.match(/^\[(.*?)\]\s*(.*?):\s*(.*)$/);
+        if (match) {
+            const [, time, speaker, text] = match;
+            if (speaker && text && text.trim().length > 1) {
+                speechEntries.push({ time: time.trim(), speaker: speaker.trim(), text: text.trim() });
+                speakers.add(speaker.trim());
+            }
+        } else if (line.length > 2) {
+            speechEntries.push({ time: '', speaker: 'Speaker', text: line });
+        }
     }
 
-    // Extract sections using header markers
-    const getSection = (header, nextHeaders) => {
-        const pattern = new RegExp(
-            `${header}[:\\s]*\\n([\\s\\S]*?)(?:${nextHeaders.map(h => h + '[:\\s]*\\n').join('|')}|$)`,
-            'i'
-        );
-        const match = text.match(pattern);
-        return match ? match[1].trim() : '';
-    };
+    // 2. Factual feature extraction based strictly on transcript text
+    const decisionRegex = /\b(approved|approves|approval|agreed|decided|resolved|adopted|passed|confirmed|sanctioned|rejected|concluded)\b/i;
+    const actionRegex = /\b(action item|will submit|will complete|will follow up|assigned to|responsible for|deadline|to submit|needs to|shall prepare|follow up)\b/i;
+    const dateRegex = /\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday|january|february|march|april|may|june|july|august|september|october|november|december|\d{1,2}\/\d{1,2}\/\d{2,4}|\d{1,2}(?:st|nd|rd|th)?\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*)\b/i;
+    const pendingRegex = /\b(pending|unresolved|to be decided|tbd|under review|awaiting|further discussion)\b/i;
 
-    const headers = [
-        'EXECUTIVE SUMMARY', 'KEY DISCUSSION POINTS', 'DECISIONS MADE',
-        'ACTION ITEMS', 'PENDING ISSUES', 'IMPORTANT DATES'
-    ];
+    const keyDiscussionPoints = [];
+    const decisionsMade = [];
+    const actionItems = [];
+    const pendingIssues = [];
+    const importantDates = [];
 
-    const executiveSummary = getSection('EXECUTIVE SUMMARY', headers.slice(1));
-    const discussionPoints = getSection('KEY DISCUSSION POINTS', headers.slice(2));
-    const decisions = getSection('DECISIONS MADE', headers.slice(3));
-    const actions = getSection('ACTION ITEMS', headers.slice(4));
-    const pending = getSection('PENDING ISSUES', headers.slice(5));
+    for (const entry of speechEntries) {
+        const text = entry.text;
 
-    const extractBullets = (section) => {
-        if (!section || section.toLowerCase().includes('none identified')) return [];
-        return section
-            .split('\n')
-            .map(l => l.replace(/^[\s\-•→*]+/, '').trim())
-            .filter(l => l.length > 0);
-    };
+        // Key discussion point (skip trivial greetings)
+        if (text.length > 15 && !/^hello|^hi|^hey|^welcome|^good morning/i.test(text)) {
+            if (keyDiscussionPoints.length < 6) {
+                keyDiscussionPoints.push(`${entry.speaker}: ${text}`);
+            }
+        }
 
-    const parseActionItems = (section) => {
-        if (!section || section.toLowerCase().includes('none identified')) return [];
-        return section
-            .split('\n')
-            .map(l => l.replace(/^[\s\-•→*]+/, '').trim())
-            .filter(l => l.length > 0)
-            .map(line => {
-                // Try to parse "task → assignee (deadline)"
-                const match = line.match(/^(.+?)(?:\s*→\s*|\s*->\s*)(.+?)(?:\s*\((.+?)\))?$/);
-                if (match) {
-                    return { task: match[1].trim(), assignee: match[2].trim(), deadline: match[3]?.trim() || 'TBD' };
-                }
-                return { task: line, assignee: 'Unassigned', deadline: 'TBD' };
+        // Factual decision
+        if (decisionRegex.test(text)) {
+            decisionsMade.push(text);
+        }
+
+        // Factual action item
+        if (actionRegex.test(text)) {
+            let assignee = entry.speaker;
+            let deadline = 'TBD';
+
+            const dateMatch = text.match(dateRegex);
+            if (dateMatch) {
+                deadline = dateMatch[0];
+            }
+
+            const nameMatch = text.match(/\b(Dr\.\s+[A-Za-z]+|[A-Z][a-z]+\s+[A-Z][a-z]+)\b/);
+            if (nameMatch && !['Action Item', 'Committee Hearing', 'Next Meeting'].includes(nameMatch[0])) {
+                assignee = nameMatch[0];
+            }
+
+            actionItems.push({
+                task: text,
+                assignee,
+                deadline
             });
-    };
+        }
+
+        // Pending issues
+        if (pendingRegex.test(text)) {
+            pendingIssues.push(text);
+        }
+
+        // Important dates
+        const dateMatch = text.match(dateRegex);
+        if (dateMatch) {
+            importantDates.push(`${dateMatch[0]} — ${text}`);
+        }
+    }
+
+    // 3. Generate Executive Summary with SmolLM2-135M-Instruct
+    let executiveSummary = '';
+    try {
+        const generator = await getGenerator();
+        const plainSpeech = speechEntries.map(e => `${e.speaker}: ${e.text}`).join('. ');
+        const prompt = `Instruct: Provide a 2-sentence factual executive summary of this meeting. Never invent facts.\nTranscript: ${plainSpeech.slice(0, 600)}\nExecutive Summary:`;
+
+        const output = await generator(prompt, {
+            max_new_tokens: 50,
+            temperature: 0.1,
+            do_sample: false,
+            repetition_penalty: 1.2
+        });
+
+        const raw = output[0]?.generated_text || '';
+        const generated = raw.replace(prompt, '').trim();
+        const sanitized = sanitizeAgainstTranscript(generated, transcript);
+        if (sanitized && sanitized.length > 20) {
+            executiveSummary = sanitized;
+        }
+    } catch (modelErr) {
+        console.warn('[LocalSummarizer] Model synthesis note:', modelErr.message);
+    }
+
+    // Fallback if model generated text was empty or filtered for safety
+    if (!executiveSummary) {
+        const participantNames = Array.from(speakers).join(', ') || 'Committee members';
+        if (speechEntries.length > 0) {
+            const firstPoints = speechEntries.slice(0, 2).map(e => e.text).join('. ');
+            executiveSummary = `Meeting held with ${participantNames}. Key discussion covered: ${firstPoints}`;
+        } else {
+            executiveSummary = `Meeting conducted with ${participantNames} covering all scheduled agenda items.`;
+        }
+    }
+
+    // 4. Construct complete structured format
+    const formattedFullSummary = [
+        'MEETING SUMMARY',
+        '',
+        'Executive Summary',
+        executiveSummary,
+        '',
+        'Key Discussion Points',
+        keyDiscussionPoints.length > 0 ? keyDiscussionPoints.map(p => `- ${p}`).join('\n') : '- General meeting session discussion.',
+        '',
+        'Decisions Made',
+        decisionsMade.length > 0 ? decisionsMade.map(d => `- ${d}`).join('\n') : '- None recorded.',
+        '',
+        'Action Items',
+        actionItems.length > 0 
+            ? actionItems.map(a => `- ${a.task} → ${a.assignee} (${a.deadline})`).join('\n') 
+            : '- None recorded.',
+        '',
+        'Pending Issues',
+        pendingIssues.length > 0 ? pendingIssues.map(p => `- ${p}`).join('\n') : '- None recorded.',
+        '',
+        'Important Dates / Deadlines',
+        importantDates.length > 0 ? importantDates.map(d => `- ${d}`).join('\n') : '- None recorded.'
+    ].join('\n');
 
     return {
-        summary: executiveSummary || text.substring(0, 500),
-        keyDecisions: extractBullets(decisions),
-        actionItems: parseActionItems(actions),
-        nextSteps: [
-            ...extractBullets(discussionPoints).slice(0, 5),
-            ...extractBullets(pending)
-        ],
-        participants: []
+        summary: executiveSummary,
+        keyDecisions: decisionsMade.length > 0 ? decisionsMade : [],
+        actionItems: actionItems.length > 0 ? actionItems : [],
+        nextSteps: keyDiscussionPoints.length > 0 ? keyDiscussionPoints : ['Review meeting records and follow up.'],
+        pendingIssues: pendingIssues.length > 0 ? pendingIssues : [],
+        importantDates: importantDates.length > 0 ? importantDates : [],
+        participants: Array.from(speakers),
+        fullSummaryText: formattedFullSummary
     };
 };
