@@ -920,10 +920,10 @@ export const useMeetingSession = () => {
   // LIVE TRANSCRIPTION (Web Speech API + Socket Relay)
   // ================================================================
   const [transcripts, setTranscripts] = useState([]);
-  const [interimText, setInterimText] = useState('');
+  const [interimTranscripts, setInterimTranscripts] = useState({});
   const [isTranscribing, setIsTranscribing] = useState(false);
   const isTranscribingRef = useRef(false);
-  const recognitionRef = useRef(null);
+  const recorderRef = useRef(null);
   const transcriptIdCounter = useRef(0);
 
   const addTranscript = useCallback((entry) => {
@@ -937,109 +937,105 @@ export const useMeetingSession = () => {
     return fullEntry;
   }, []);
 
-  // Listen for remote transcript entries via socket
+  // Listen for remote transcript events via socket
   useEffect(() => {
     if (!socket) return;
-    const handleRemoteTranscript = ({ entry }) => {
-      if (entry) {
-        addTranscript(entry);
-      }
+    
+    const handleTranscriptFinal = ({ userId, name, text }) => {
+      const entry = { speaker: name, text };
+      addTranscript(entry);
+      
+      // Clear this user's interim text
+      setInterimTranscripts(prev => {
+        const next = { ...prev };
+        delete next[userId];
+        return next;
+      });
     };
-    socket.on('samvaad:transcript_entry', handleRemoteTranscript);
-    return () => socket.off('samvaad:transcript_entry', handleRemoteTranscript);
+
+    const handleTranscriptPartial = ({ userId, name, text }) => {
+      setInterimTranscripts(prev => ({
+        ...prev,
+        [userId]: { name, text }
+      }));
+    };
+
+    socket.on('samvaad:transcript_final', handleTranscriptFinal);
+    socket.on('samvaad:transcript_partial', handleTranscriptPartial);
+    
+    return () => {
+      socket.off('samvaad:transcript_final', handleTranscriptFinal);
+      socket.off('samvaad:transcript_partial', handleTranscriptPartial);
+    };
   }, [socket, addTranscript]);
 
-  const startTranscription = useCallback(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      toast.error('Speech recognition is not supported in this browser. Please use Chrome or Edge.');
+  const startTranscription = useCallback(async () => {
+    if (!socket) {
+      toast.error('Socket not connected');
       return;
     }
 
-    if (recognitionRef.current) {
-      try { recognitionRef.current.abort(); } catch {}
-      recognitionRef.current = null;
+    if (recorderRef.current) {
+      try { recorderRef.current.stop(); } catch {}
+      recorderRef.current = null;
+    }
+
+    let stream = localStreamRef.current;
+    if (!stream || stream.getAudioTracks().length === 0) {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (err) {
+        toast.error('Microphone access denied for transcription.');
+        return;
+      }
     }
 
     try {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = navigator.language || 'en-IN';
-      recognition.maxAlternatives = 1;
+      // Start backend deepgram session
+      socket.emit('samvaad:start_transcription', { roomId });
 
-      recognition.onresult = (event) => {
-        let interim = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const res = event.results[i];
-          const text = res[0]?.transcript || '';
-          if (res.isFinal) {
-            const trimmed = text.trim();
-            if (trimmed.length > 0) {
-              const entry = {
-                speaker: currentUser?.name || 'You',
-                text: trimmed,
-              };
-              const fullEntry = addTranscript(entry);
-
-              // Broadcast to other participants
-              if (socket && roomId) {
-                socket.emit('samvaad:transcript_entry', { roomId, entry: fullEntry });
-              }
-            }
-            setInterimText('');
-          } else {
-            interim += text;
-          }
-        }
-        if (interim) setInterimText(interim);
-      };
-
-      recognition.onerror = (event) => {
-        if (event.error === 'no-speech') return; // Normal silence, auto-restarts on next speech
-        if (event.error === 'aborted') return;
-        console.warn('Speech recognition error:', event.error);
-        if (event.error === 'not-allowed') {
-          toast.error('Microphone access denied for transcription.');
-          isTranscribingRef.current = false;
-          setIsTranscribing(false);
+      const mimeType = window.MediaRecorder.isTypeSupported('audio/webm') 
+        ? 'audio/webm' 
+        : 'audio/mp4';
+        
+      const recorder = new window.MediaRecorder(stream, { mimeType });
+      
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0 && socket) {
+          socket.emit('samvaad:audio_stream', { roomId, audio: event.data });
         }
       };
 
-      recognition.onend = () => {
-        // Auto-restart if user has not explicitly stopped transcription
-        if (isTranscribingRef.current) {
-          try {
-            recognition.start();
-          } catch (e) {
-            // If already started or stopped, ignore
-          }
+      recorder.onstop = () => {
+        if (socket) {
+          socket.emit('samvaad:stop_transcription');
         }
       };
 
-      recognition.start();
-      recognitionRef.current = recognition;
+      recorder.start(250); // 250ms chunks
+      recorderRef.current = recorder;
+      
       isTranscribingRef.current = true;
       setIsTranscribing(true);
       toast.success('Live transcription started');
     } catch (e) {
-      console.warn('Failed to start speech recognition:', e);
-      toast.error('Failed to start speech recognition');
+      console.warn('Failed to start transcription streaming:', e);
+      toast.error('Failed to start transcription streaming');
       isTranscribingRef.current = false;
       setIsTranscribing(false);
     }
-  }, [currentUser, socket, roomId, addTranscript]);
+  }, [socket, roomId]);
 
   const stopTranscription = useCallback(() => {
     isTranscribingRef.current = false;
-    if (recognitionRef.current) {
+    if (recorderRef.current) {
       try { 
-        recognitionRef.current.stop(); 
+        recorderRef.current.stop(); 
       } catch {}
-      recognitionRef.current = null;
+      recorderRef.current = null;
     }
     setIsTranscribing(false);
-    setInterimText('');
+    setInterimTranscripts({});
     toast.success('Transcription stopped');
   }, []);
 
@@ -1197,7 +1193,7 @@ export const useMeetingSession = () => {
 
     // Transcript / AI Notes
     transcripts, addTranscript,
-    interimText, isTranscribing, startTranscription, stopTranscription,
+    interimTranscripts, isTranscribing, startTranscription, stopTranscription,
 
     // Chat
     chat,

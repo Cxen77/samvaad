@@ -30,7 +30,7 @@ const ContextPanel = ({ session }) => {
     meeting, currentUser, isHost, isMeetingSealed, chat,
     participants, muteParticipant, removeParticipant, muteAll, lowerParticipantHand,
     voteState, voteResult, hasVoted, myVote, startVote, castVote, closeVote,
-    transcripts, addTranscript, interimText, isTranscribing, startTranscription, stopTranscription,
+    transcripts, addTranscript, interimTranscripts, isTranscribing, startTranscription, stopTranscription,
     isLocked, toggleMeetingLock,
     isRecording, recSeconds, isRecPaused, toggleRecording, toggleRecPause,
     meetingSettings, updateMeetingSettings
@@ -119,7 +119,7 @@ const ContextPanel = ({ session }) => {
             transcripts={transcripts}
             addTranscript={addTranscript}
             currentUser={currentUser}
-            interimText={interimText}
+            interimTranscripts={interimTranscripts}
             isTranscribing={isTranscribing}
             startTranscription={startTranscription}
             stopTranscription={stopTranscription}

@@ -4,6 +4,7 @@ import User from '../models/User.js';
 import SystemSettings from '../models/SystemSettings.js';
 import { initSamvaadSocket } from './samvaadSocket.js';
 import { initDirectCallSocket } from './directCallSocket.js';
+import { initTranscriptionSocket } from './transcriptionSocket.js';
 
 let io;
 const onlineUsers = new Map(); // userId -> Set<socketId>
@@ -94,6 +95,7 @@ export const initSocket = (httpServer) => {
         // Init Samvaad custom handlers
         initSamvaadSocket(io, socket);
         initDirectCallSocket(io, socket);
+        initTranscriptionSocket(io, socket);
 
         // Join user-specific room
         socket.join(`user:${userId}`);

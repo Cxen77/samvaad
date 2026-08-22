@@ -7,7 +7,7 @@ const TranscriptPanel = ({
   transcripts, 
   addTranscript, 
   currentUser, 
-  interimText, 
+  interimTranscripts = {}, 
   isTranscribing, 
   startTranscription, 
   stopTranscription 
@@ -23,7 +23,7 @@ const TranscriptPanel = ({
     if (listRef.current) {
       listRef.current.scrollTop = listRef.current.scrollHeight;
     }
-  }, [transcripts, interimText]);
+  }, [transcripts, interimTranscripts]);
 
   const handleCopy = () => {
     if (transcripts.length === 0) return;
@@ -133,7 +133,7 @@ const TranscriptPanel = ({
 
       {/* Transcript Feed */}
       <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1" ref={listRef}>
-        {transcripts.length === 0 && !interimText ? (
+        {transcripts.length === 0 && Object.keys(interimTranscripts).length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-slate-500 text-xs text-center px-4">
             <FiMic size={32} className="mb-3 text-slate-400 dark:text-slate-700" />
             <p className="font-semibold text-slate-700 dark:text-slate-300">No transcript entries yet</p>
@@ -152,16 +152,16 @@ const TranscriptPanel = ({
                 <p className="text-xs text-slate-800 dark:text-slate-200 leading-relaxed">{t.text}</p>
               </div>
             ))}
-            {/* Interim (in-progress) text */}
-            {interimText && (
-              <div className="p-3 bg-sky-50/60 dark:bg-slate-900/50 border border-sky-500/20 rounded-xl space-y-1 opacity-80">
+            {/* Interim (in-progress) text from multiple active speakers */}
+            {Object.entries(interimTranscripts).map(([userId, { name, text }]) => (
+              <div key={userId} className="p-3 bg-sky-50/60 dark:bg-slate-900/50 border border-sky-500/20 rounded-xl space-y-1 opacity-80">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-slate-700 dark:text-slate-300">{currentUser?.name || 'You'}</span>
+                  <span className="font-semibold text-slate-700 dark:text-slate-300">{name || 'User'}</span>
                   <span className="text-[10px] text-sky-600 dark:text-sky-400 font-medium">listening...</span>
                 </div>
-                <p className="text-xs text-slate-700 dark:text-slate-300 italic">{interimText}</p>
+                <p className="text-xs text-slate-700 dark:text-slate-300 italic">{text}</p>
               </div>
-            )}
+            ))}
           </>
         )}
       </div>
