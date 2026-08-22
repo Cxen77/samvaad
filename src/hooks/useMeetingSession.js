@@ -969,60 +969,134 @@ export const useMeetingSession = () => {
     };
   }, [socket, addTranscript]);
 
+  const transcriptionStreamRef = useRef(null); // Separate audio-only stream for transcription
+
   const startTranscription = useCallback(async () => {
     if (!socket) {
       toast.error('Socket not connected');
       return;
     }
 
+    // Prevent duplicate start
+    if (recorderRef.current && recorderRef.current.state !== 'inactive') {
+      console.warn('[Transcription] Recorder already active, ignoring duplicate start');
+      return;
+    }
+
+    // Clean up any previous recorder
     if (recorderRef.current) {
       try { recorderRef.current.stop(); } catch {}
       recorderRef.current = null;
     }
 
-    let stream = localStreamRef.current;
-    if (!stream || stream.getAudioTracks().length === 0) {
+    // 1. Obtain an audio-only stream
+    let audioStream = null;
+
+    // Try to clone audio tracks from the existing WebRTC stream first
+    const existingStream = localStreamRef.current;
+    if (existingStream && existingStream.active) {
+      const audioTracks = existingStream.getAudioTracks().filter(t => t.readyState === 'live');
+      if (audioTracks.length > 0) {
+        // Clone the track so stopping transcription doesn't kill WebRTC audio
+        audioStream = new MediaStream(audioTracks.map(t => t.clone()));
+      }
+    }
+
+    // If no usable audio from WebRTC, request a fresh audio-only stream
+    if (!audioStream) {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
       } catch (err) {
+        console.warn('[Transcription] Microphone access denied:', err.message);
         toast.error('Microphone access denied for transcription.');
         return;
       }
     }
 
+    // 2. Validate the audio stream
+    if (!audioStream || !audioStream.active || audioStream.getAudioTracks().length === 0) {
+      toast.error('No active microphone track available for transcription.');
+      return;
+    }
+
+    const liveTrack = audioStream.getAudioTracks().find(t => t.readyState === 'live');
+    if (!liveTrack) {
+      toast.error('Microphone track is not active. Please check your audio device.');
+      return;
+    }
+
+    // Store for cleanup
+    transcriptionStreamRef.current = audioStream;
+
+    // 3. Find a supported audio MIME type
+    const supportedMimeTypes = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/ogg;codecs=opus',
+      'audio/mp4',
+    ];
+    const mimeType = supportedMimeTypes.find(type => MediaRecorder.isTypeSupported(type));
+
+    if (!mimeType) {
+      toast.error('Your browser does not support any audio recording format for transcription.');
+      // Clean up the cloned stream
+      audioStream.getTracks().forEach(t => t.stop());
+      transcriptionStreamRef.current = null;
+      return;
+    }
+
+    console.log('[Transcription] Stream active:', audioStream.active,
+      '| Audio tracks:', audioStream.getAudioTracks().length,
+      '| Track state:', liveTrack.readyState,
+      '| MIME:', mimeType);
+
     try {
-      // Start backend deepgram session
+      // 4. Signal backend to start Deepgram session
       socket.emit('samvaad:start_transcription', { roomId });
 
-      const mimeType = window.MediaRecorder.isTypeSupported('audio/webm') 
-        ? 'audio/webm' 
-        : 'audio/mp4';
-        
-      const recorder = new window.MediaRecorder(stream, { mimeType });
-      
+      // 5. Create audio-only MediaRecorder
+      const recorder = new MediaRecorder(audioStream, { mimeType });
+
       recorder.ondataavailable = (event) => {
-        if (event.data.size > 0 && socket) {
+        if (event.data && event.data.size > 0 && socket) {
           socket.emit('samvaad:audio_stream', { roomId, audio: event.data });
         }
+      };
+
+      recorder.onerror = (event) => {
+        console.error('[Transcription] MediaRecorder error:', event.error?.message || event);
+        toast.error('Live transcription encountered an error.');
+        isTranscribingRef.current = false;
+        setIsTranscribing(false);
       };
 
       recorder.onstop = () => {
         if (socket) {
           socket.emit('samvaad:stop_transcription');
         }
+        // Clean up the cloned transcription stream (does NOT affect WebRTC)
+        if (transcriptionStreamRef.current) {
+          transcriptionStreamRef.current.getTracks().forEach(t => t.stop());
+          transcriptionStreamRef.current = null;
+        }
       };
 
-      recorder.start(250); // 250ms chunks
+      recorder.start(250); // 250ms audio chunks
       recorderRef.current = recorder;
-      
+
       isTranscribingRef.current = true;
       setIsTranscribing(true);
       toast.success('Live transcription started');
     } catch (e) {
-      console.warn('Failed to start transcription streaming:', e);
-      toast.error('Failed to start transcription streaming');
+      console.warn('[Transcription] Failed to start:', e.message);
+      toast.error('Live transcription could not start. Please check microphone access and browser audio support.');
       isTranscribingRef.current = false;
       setIsTranscribing(false);
+      // Clean up cloned stream on failure
+      if (transcriptionStreamRef.current) {
+        transcriptionStreamRef.current.getTracks().forEach(t => t.stop());
+        transcriptionStreamRef.current = null;
+      }
     }
   }, [socket, roomId]);
 
@@ -1030,9 +1104,16 @@ export const useMeetingSession = () => {
     isTranscribingRef.current = false;
     if (recorderRef.current) {
       try { 
-        recorderRef.current.stop(); 
+        if (recorderRef.current.state !== 'inactive') {
+          recorderRef.current.stop(); // triggers onstop which cleans up transcriptionStreamRef
+        }
       } catch {}
       recorderRef.current = null;
+    }
+    // Safety: clean up transcription stream if onstop didn't fire
+    if (transcriptionStreamRef.current) {
+      transcriptionStreamRef.current.getTracks().forEach(t => t.stop());
+      transcriptionStreamRef.current = null;
     }
     setIsTranscribing(false);
     setInterimTranscripts({});
