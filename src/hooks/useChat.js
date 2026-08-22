@@ -9,28 +9,40 @@ export const useChats = () => {
     const [loading, setLoading] = useState(true);
     const { socket } = useSocket();
 
+    const fetchChats = useCallback(async () => {
+        try {
+            const { data } = await api.get('/chat');
+            setChats(Array.isArray(data) ? data : []);
+            return data;
+        } catch (err) {
+            console.error('Error fetching chats:', err);
+            return [];
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
     useEffect(() => {
-        const fetchChats = async () => {
-            try {
-                const { data } = await api.get('/chat');
-                setChats(data);
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchChats();
+    }, [fetchChats]);
+
+    const addOrUpdateChat = useCallback((chatData) => {
+        if (!chatData || !chatData._id) return;
+        setChats(prev => {
+            const existingIndex = prev.findIndex(c => c._id === chatData._id);
+            if (existingIndex > -1) {
+                const updated = [...prev];
+                updated[existingIndex] = { ...updated[existingIndex], ...chatData };
+                return updated;
+            }
+            return [chatData, ...prev];
+        });
     }, []);
 
     const accessChat = async (userId) => {
         try {
             const { data } = await api.post('/chat', { userId });
-
-            // Check if chat already exists in list
-            if (!chats.find(c => c._id === data._id)) {
-                setChats(prev => [data, ...prev]);
-            }
+            addOrUpdateChat(data);
             return data;
         } catch (error) {
             console.error("Error accessing chat:", error);
@@ -42,8 +54,10 @@ export const useChats = () => {
         if (!socket) return;
 
         const handleNewMessage = async (newMessage) => {
+            if (!newMessage) return;
             // Normalize chatId
-            const msgChatId = newMessage.chatId._id || newMessage.chatId;
+            const msgChatId = newMessage.chatId?._id || newMessage.chatId;
+            if (!msgChatId) return;
 
             // Update chat list order and last message
             setChats(prev => {
@@ -63,29 +77,28 @@ export const useChats = () => {
             });
 
             // If chat was not found in the sync update above, fetch it
-            // If chat was not found in the sync update above, fetch it
-            // We do this check outside the setChats updater to allow async fetch
-            // We do this check outside the setChats updater to allow async fetch
-            const chatExists = chats.find(c => c._id === msgChatId);
-            if (!chatExists) {
-                try {
-                    const { data } = await api.get(`/chat/${msgChatId}`);
-                    setChats(prev => {
-                        // Double check existence to prevent race conditions
-                        if (prev.find(c => c._id === data._id)) return prev;
-                        return [data, ...prev];
-                    });
-                } catch (err) {
-                    console.error("Failed to fetch new chat", err);
+            try {
+                const { data } = await api.get(`/chat/${msgChatId}`);
+                if (data && data._id) {
+                    addOrUpdateChat(data);
                 }
+            } catch (err) {
+                // Silently ignore if not found or unauthorized
             }
         };
 
         socket.on('message:new', handleNewMessage);
         return () => socket.off('message:new', handleNewMessage);
-    }, [socket]);
+    }, [socket, addOrUpdateChat]);
 
-    return { chats, loading, accessChat };
+    return { 
+        chats, 
+        loading, 
+        accessChat, 
+        refetchChats: fetchChats, 
+        addOrUpdateChat,
+        setChats 
+    };
 };
 
 // Hook for single chat interaction

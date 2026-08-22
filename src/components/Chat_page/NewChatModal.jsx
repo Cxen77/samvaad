@@ -3,7 +3,7 @@ import { FiX, FiSearch, FiUserPlus, FiCheck, FiMessageSquare, FiUser } from 'rea
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 
-const NewChatModal = ({ isOpen, onClose, onSelectUser }) => {
+const NewChatModal = ({ isOpen, onClose, onSelectUser, onContactAdded }) => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -42,9 +42,19 @@ const NewChatModal = ({ isOpen, onClose, onSelectUser }) => {
   const handleAddContact = async (user) => {
     try {
       await api.post(`/users/contacts/${user._id}`);
+      let chatData = null;
+      try {
+        const chatRes = await api.post(`/chat/direct/${user._id}`);
+        chatData = chatRes.data;
+      } catch (e) {
+        // Non-fatal
+      }
       toast.success(`${user.name} added to contacts`);
       setContacts(prev => [...prev, user]);
       setResults(prev => prev.map(u => u._id === user._id ? { ...u, isContact: true } : u));
+      if (onContactAdded) {
+        onContactAdded(user, chatData);
+      }
     } catch {
       toast.error('Failed to add contact');
     }

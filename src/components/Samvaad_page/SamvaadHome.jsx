@@ -202,7 +202,7 @@ const SamvaadHome = () => {
 
           <ActionBtn 
             icon={FiEdit3} 
-            label="AI Notes" 
+            label="Notes" 
             color="bg-slate-700 hover:bg-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700" 
             onClick={() => navigate('/notes')} 
           />

@@ -6,7 +6,7 @@ import {
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 
-const ContactsView = ({ onStartChat, onOpenProfile, onBack }) => {
+const ContactsView = ({ onStartChat, onOpenProfile, onBack, onContactAdded }) => {
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -55,9 +55,21 @@ const ContactsView = ({ onStartChat, onOpenProfile, onBack }) => {
   const handleAddContact = async (user) => {
     try {
       await api.post(`/users/contacts/${user._id}`);
+      // Also initialize or fetch direct chat so it's immediately ready
+      let chatData = null;
+      try {
+        const chatRes = await api.post(`/chat/direct/${user._id}`);
+        chatData = chatRes.data;
+      } catch (e) {
+        // Non-fatal
+      }
+
       toast.success(`${user.name} added to contacts`);
       fetchContacts();
       setDirectoryResults(prev => prev.map(u => u._id === user._id ? { ...u, isContact: true } : u));
+      if (onContactAdded) {
+        onContactAdded(user, chatData);
+      }
     } catch {
       toast.error('Failed to add contact');
     }

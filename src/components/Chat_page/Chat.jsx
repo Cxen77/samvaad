@@ -38,7 +38,7 @@ function Chat() {
   const { initiateCall } = useDirectCall();
   const isMobile = useIsMobile(768);
 
-  const { chats, loading: chatsLoading, refetchChats } = useChats();
+  const { chats, loading: chatsLoading, refetchChats, addOrUpdateChat } = useChats();
   const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -198,6 +198,23 @@ function Chat() {
     if (!s) return filteredByType;
     return filteredByType.filter(chat => chat.name.toLowerCase().includes(s));
   }, [filteredByType, search]);
+
+  // Auto-fetch active chat if route id is not yet present in the chats list
+  useEffect(() => {
+    if (!id || id === currentUser?._id || id === 'self-chat') return;
+    const exists = chats.some(c => c._id === id);
+    if (!exists) {
+      api.get(`/chat/${id}`)
+        .then(res => {
+          if (res.data && res.data._id) {
+            addOrUpdateChat(res.data);
+          }
+        })
+        .catch(err => {
+          console.warn('Could not auto-fetch chat for id:', id, err.message);
+        });
+    }
+  }, [id, chats, currentUser, addOrUpdateChat]);
 
   // Active Chat Selection
   const activeChatRaw = id ? (allChatItems.find(c => c._id === id) || chats.find(c => c._id === id) || (id === currentUser?._id ? selfChatObj : null)) : selfChatObj;
@@ -419,18 +436,24 @@ function Chat() {
       <NewChatModal
         isOpen={isNewChatModalOpen}
         onClose={() => setIsNewChatModalOpen(false)}
-        onSelectUser={c => {
-          refetchChats?.();
+        onSelectUser={async c => {
+          if (c && c._id) addOrUpdateChat(c);
+          await refetchChats?.();
           setActiveFilter('all');
           navigate(`/chat/${c._id}`);
+        }}
+        onContactAdded={async (user, chatData) => {
+          if (chatData) addOrUpdateChat(chatData);
+          await refetchChats?.();
         }}
       />
 
       <GroupAdminModal
         isOpen={isGroupModalOpen}
         onClose={() => setIsGroupModalOpen(false)}
-        onGroupCreated={c => {
-          refetchChats?.();
+        onGroupCreated={async c => {
+          if (c && c._id) addOrUpdateChat(c);
+          await refetchChats?.();
           setActiveFilter('all');
           navigate(`/chat/${c._id}`);
         }}
@@ -439,10 +462,21 @@ function Chat() {
       <ContactProfileModal
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
-        contactUser={activeChat.otherUser}
-        onStartChat={c => {
-          setActiveFilter('all');
-          navigate(`/chat/${c._id}`);
+        contactUser={selectedContactUser || activeChat.otherUser}
+        onStartChat={async (user) => {
+          try {
+            const targetId = user?._id || user?.id;
+            if (!targetId) return;
+            const res = await api.post(`/chat/direct/${targetId}`);
+            if (res.data && res.data._id) {
+              addOrUpdateChat(res.data);
+            }
+            await refetchChats?.();
+            setActiveFilter('all');
+            navigate(`/chat/${res.data._id}`);
+          } catch {
+            toast.error('Failed to start chat');
+          }
         }}
         onContactRemoved={() => refetchChats?.()}
       />
@@ -647,13 +681,24 @@ function Chat() {
               onBack={() => setActiveFilter('all')}
               onStartChat={async (user) => {
                 try {
-                  const res = await api.post(`/chat/direct/${user._id}`);
-                  refetchChats?.();
+                  const targetId = user?._id || user?.id;
+                  if (!targetId) return;
+                  const res = await api.post(`/chat/direct/${targetId}`);
+                  if (res.data && res.data._id) {
+                    addOrUpdateChat(res.data);
+                  }
+                  await refetchChats?.();
                   setActiveFilter('all');
                   navigate(`/chat/${res.data._id}`);
                 } catch {
                   toast.error('Failed to start chat');
                 }
+              }}
+              onContactAdded={async (user, chatData) => {
+                if (chatData) {
+                  addOrUpdateChat(chatData);
+                }
+                await refetchChats?.();
               }}
               onOpenProfile={(user) => {
                 setSelectedContactUser(user);
