@@ -179,7 +179,7 @@ export const getChatHistory = async (req, res) => {
         const { limit = 30, cursor } = req.query;
 
         // SECURITY: Verify requester is a participant
-        const chat = await Chat.findById(chatId).select('participants isEncrypted encryptedChatKey chatKeyIv chatKeyAuthTag').lean();
+        const chat = await Chat.findById(chatId).select('participants chatType isGroupChat isEncrypted encryptedChatKey chatKeyIv chatKeyAuthTag').lean();
         if (!chat || !chat.participants.some(p => p.toString() === req.user._id.toString())) {
             return res.status(403).json({ message: 'Not a member of this chat' });
         }
@@ -194,29 +194,34 @@ export const getChatHistory = async (req, res) => {
         const messages = await Message.find(query)
             .sort({ createdAt: -1 })
             .limit(cappedLimit)
-            .populate('senderId', 'name profilePic');
+            .populate('senderId', 'name profilePic role email');
 
-        // Unwrap meeting key once if available
-        let meetingKeyHex = null;
-        if (chat.isEncrypted && chat.encryptedChatKey) {
-            meetingKeyHex = unwrapMeetingKey(chat.encryptedChatKey, chat.chatKeyIv, chat.chatKeyAuthTag);
+        // Only decrypt on server for Meeting Chats with server-managed meeting encryption keys
+        if (chat.chatType === 'meeting' && chat.isEncrypted && chat.encryptedChatKey) {
+            let meetingKeyHex = null;
+            try {
+                meetingKeyHex = unwrapMeetingKey(chat.encryptedChatKey, chat.chatKeyIv, chat.chatKeyAuthTag);
+            } catch (err) {
+                console.warn('[ChatController] Could not unwrap meeting key:', err.message);
+            }
+
+            const decryptedMessages = messages.map(msg => {
+                const msgObj = msg.toObject();
+                if (meetingKeyHex && msgObj.encryptedContent && msgObj.iv && msgObj.authTag && msgObj.keyVersion) {
+                    msgObj.text = decryptMessage(msgObj.encryptedContent, msgObj.iv, msgObj.authTag, meetingKeyHex);
+                    delete msgObj.encryptedContent;
+                    delete msgObj.iv;
+                    delete msgObj.authTag;
+                }
+                return msgObj;
+            });
+            return res.json(decryptedMessages.reverse());
         }
 
-        // Decrypt messages if chat is encrypted
-        const decryptedMessages = messages.map(msg => {
-            const msgObj = msg.toObject();
-            if (msgObj.encryptedContent && msgObj.iv && msgObj.authTag) {
-                const keyToUse = msgObj.keyVersion ? meetingKeyHex : null;
-                msgObj.text = decryptMessage(msgObj.encryptedContent, msgObj.iv, msgObj.authTag, keyToUse);
-                // Don't send encryption internals to the client
-                delete msgObj.encryptedContent;
-                delete msgObj.iv;
-                delete msgObj.authTag;
-            }
-            return msgObj;
-        });
-
-        res.json(decryptedMessages.reverse());
+        // For Direct / E2EE chats and regular chats:
+        // Return raw message objects with encryptedContent, iv, authTag intact so client-side Web Crypto E2EE can decrypt them!
+        const resultMessages = messages.map(msg => msg.toObject()).reverse();
+        res.json(resultMessages);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

@@ -197,7 +197,12 @@ export const decryptDirectMessagePayload = async (message, currentUserId, otherU
 
   try {
     const sharedKey = await getSharedConversationKey(currentUserId, otherUserId);
-    if (!sharedKey) return '[Encryption Key Unavailable]';
+    if (!sharedKey) {
+      if (message.text && message.text !== '[Encrypted Direct Message]' && message.text !== '[Encrypted]') {
+        return message.text;
+      }
+      return message.text || '[Encrypted Message]';
+    }
 
     const ciphertextBuffer = hex2buf(message.encryptedContent);
     const authTagBuffer = hex2buf(message.authTag);
@@ -218,6 +223,9 @@ export const decryptDirectMessagePayload = async (message, currentUserId, otherU
     return decoder.decode(decryptedBuffer);
   } catch (err) {
     console.error('[E2EE] Decrypt payload error:', err);
-    return '[Decryption Error]';
+    if (message.text && message.text !== '[Encrypted Direct Message]' && message.text !== '[Encrypted]') {
+      return message.text;
+    }
+    return message.text || '[Encrypted Message]';
   }
 };

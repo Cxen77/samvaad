@@ -16,9 +16,27 @@ const useNotifications = () => {
                 if (permission === 'granted') {
                     console.log('Notification permission granted.');
 
-                    // Get Token
-                    const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
-                    const currentToken = await getToken(messaging, vapidKey ? { vapidKey } : undefined);
+                    // Get Token safely with VAPID key validation
+                    const rawVapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+                    let validVapidKey = null;
+                    if (rawVapidKey && typeof rawVapidKey === 'string' && rawVapidKey.length > 20) {
+                        try {
+                            const base64 = rawVapidKey.replace(/-/g, '+').replace(/_/g, '/');
+                            const padded = base64.padEnd(base64.length + (4 - (base64.length % 4)) % 4, '=');
+                            window.atob(padded);
+                            validVapidKey = rawVapidKey;
+                        } catch {
+                            // Invalid base64, omit vapidKey to avoid atob crash
+                        }
+                    }
+
+                    let currentToken = null;
+                    try {
+                        currentToken = await getToken(messaging, validVapidKey ? { vapidKey: validVapidKey } : undefined);
+                    } catch (tokenErr) {
+                        // Suppress unconfigured push notification token errors
+                        console.warn('[Notifications] Token registration skipped:', tokenErr.message);
+                    }
 
                     if (currentToken) {
                         try {
@@ -28,13 +46,13 @@ const useNotifications = () => {
                             console.error('Failed to send push token to server', err);
                         }
                     } else {
-                        console.log('No registration token available. Request permission to generate one.');
+                        console.log('No registration token available.');
                     }
                 } else {
                     console.log('Unable to get permission to notify.');
                 }
             } catch (error) {
-                console.error('An error occurred while retrieving token. ', error);
+                console.warn('[Notifications] Permission or token handling warning:', error.message);
             }
         };
 
