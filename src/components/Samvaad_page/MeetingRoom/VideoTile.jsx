@@ -26,8 +26,16 @@ const VideoTile = ({
 }) => {
   const initial = participant?.name?.[0]?.toUpperCase() || 'U';
   const effectiveStream = isLocal ? localStream : stream;
-  const isCamOn = isLocal ? (!isVideoOff && Boolean(localStream)) : (participant?.cam !== false && Boolean(effectiveStream));
-  const showAvatar = isLocal ? (isVideoOff || !localStream) : (!isCamOn || !effectiveStream);
+  
+  // For remote participants, check actual video track state instead of trusting metadata
+  const remoteHasActiveVideo = (() => {
+    if (isLocal || !effectiveStream) return false;
+    const videoTracks = effectiveStream.getVideoTracks();
+    return videoTracks.length > 0 && videoTracks.some(t => t.enabled && t.readyState === 'live');
+  })();
+  
+  const isCamOn = isLocal ? (!isVideoOff && Boolean(localStream)) : remoteHasActiveVideo;
+  const showAvatar = isLocal ? (isVideoOff || !localStream) : !remoteHasActiveVideo;
   const isMuted = isLocal ? false : (participant?.mic === false);
   const tileReaction = reactions?.find(r => r.socketId === participant?.socketId);
 

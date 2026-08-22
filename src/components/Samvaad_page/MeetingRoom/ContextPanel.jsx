@@ -29,7 +29,7 @@ const ContextPanel = ({ session }) => {
     activePanel, isPanelCollapsed, setIsPanelCollapsed,
     meeting, currentUser, isHost, isMeetingSealed, chat,
     participants, muteParticipant, removeParticipant, muteAll, lowerParticipantHand,
-    voteState, voteResult, hasVoted, myVote, startVote, castVote, closeVote,
+    voteState, voteResult, voteIntegrity, hasVoted, myVote, startVote, castVote, closeVote, verifyVote,
     transcripts, addTranscript, interimTranscripts, isTranscribing, startTranscription, stopTranscription,
     isLocked, toggleMeetingLock,
     isRecording, recSeconds, isRecPaused, toggleRecording, toggleRecPause,
@@ -100,11 +100,13 @@ const ContextPanel = ({ session }) => {
           <VotingPanel
             voteState={voteState}
             voteResult={voteResult}
+            voteIntegrity={voteIntegrity}
             hasVoted={hasVoted}
             myVote={myVote}
             startVote={startVote}
             castVote={castVote}
             closeVote={closeVote}
+            verifyVote={verifyVote}
             isHost={isHost}
             participants={participants}
           />

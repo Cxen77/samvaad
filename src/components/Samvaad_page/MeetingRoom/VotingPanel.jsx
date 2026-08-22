@@ -3,7 +3,8 @@ import { FiBarChart2, FiCheck, FiX, FiMinus, FiCheckCircle, FiClock, FiShield } 
 
 const VotingPanel = ({
   voteState, voteResult, hasVoted, myVote,
-  startVote, castVote, closeVote,
+  startVote, castVote, closeVote, verifyVote,
+  voteIntegrity,
   isHost, participants
 }) => {
   const [newQuestion, setNewQuestion] = useState('');
@@ -159,6 +160,52 @@ const VotingPanel = ({
               <span className="text-slate-500 dark:text-slate-400 font-mono text-xs w-12 text-right">{b.count} ({b.percentage}%)</span>
             </div>
           ))}
+        </div>
+
+        {/* Blockchain Integrity Verification */}
+        <div className="p-3.5 bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-xl space-y-2.5">
+          <div className="flex items-center gap-1.5">
+            <FiShield size={13} className="text-slate-500 dark:text-slate-400" />
+            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase">Blockchain Integrity</span>
+          </div>
+
+          {voteIntegrity ? (
+            <div className={`p-3 rounded-lg border ${
+              voteIntegrity.verified 
+                ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/50' 
+                : 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800/50'
+            }`}>
+              <div className="flex items-center gap-2 mb-1.5">
+                {voteIntegrity.verified ? (
+                  <FiCheckCircle size={14} className="text-emerald-600 dark:text-emerald-400" />
+                ) : (
+                  <FiX size={14} className="text-red-600 dark:text-red-400" />
+                )}
+                <span className={`text-xs font-bold ${
+                  voteIntegrity.verified ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300'
+                }`}>
+                  {voteIntegrity.verified ? 'Integrity Verified' : 'Integrity Check Failed'}
+                </span>
+              </div>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                {voteIntegrity.reason}
+              </p>
+              {voteIntegrity.sha256Hash && (
+                <p className="text-[9px] font-mono text-slate-400 dark:text-slate-600 mt-1 break-all">
+                  SHA-256: {voteIntegrity.sha256Hash.slice(0, 16)}...{voteIntegrity.sha256Hash.slice(-16)}
+                </p>
+              )}
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => verifyVote && verifyVote(voteResult.id || voteResult.decisionId)}
+              className="w-full py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg font-semibold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 border border-slate-200 dark:border-slate-700"
+            >
+              <FiShield size={12} />
+              Verify Integrity on Ledger
+            </button>
+          )}
         </div>
       </div>
     );

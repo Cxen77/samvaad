@@ -60,7 +60,11 @@ export const useMeetingSession = () => {
       { urls: 'stun:stun.l.google.com:19302' },
       { urls: 'stun:stun1.l.google.com:19302' },
       { urls: 'stun:stun2.l.google.com:19302' },
-      { urls: 'stun:stun3.l.google.com:19302' }
+      { urls: 'stun:stun3.l.google.com:19302' },
+      // Free TURN relay for cross-network (WiFi ↔ cellular) connectivity
+      { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+      { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+      { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
     ]
   };
 
@@ -72,6 +76,7 @@ export const useMeetingSession = () => {
   const peerConnectionsRef = useRef(new Map()); // socketId -> RTCPeerConnection
   const remoteStreamsRef = useRef(new Map());   // socketId -> MediaStream
   const pendingCandidatesRef = useRef(new Map()); // socketId -> Array<candidate>
+  const makingOfferRef = useRef(new Set());     // socketIds currently creating an offer
 
   const [localStream, setLocalStream] = useState(null);
   const [remoteStreams, setRemoteStreams] = useState({});
@@ -116,12 +121,14 @@ export const useMeetingSession = () => {
     }
 
     const pc = new RTCPeerConnection(RTC_CONFIG);
+    console.log(`[WebRTC] Peer created for ${targetSocketId.slice(0, 8)}`);
 
     // Add existing local tracks
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach(track => {
         pc.addTrack(track, localStreamRef.current);
       });
+      console.log(`[WebRTC] Local tracks added: ${localStreamRef.current.getTracks().length}`);
     }
 
     pc.onicecandidate = (event) => {
@@ -135,11 +142,14 @@ export const useMeetingSession = () => {
     };
 
     pc.ontrack = (event) => {
+      console.log(`[WebRTC] Remote track received from ${targetSocketId.slice(0, 8)}: kind=${event.track.kind}`);
       let stream = event.streams && event.streams[0];
       if (!stream) {
         const existing = remoteStreamsRef.current.get(targetSocketId);
         if (existing) {
-          existing.addTrack(event.track);
+          if (!existing.getTracks().includes(event.track)) {
+            existing.addTrack(event.track);
+          }
           stream = existing;
         } else {
           stream = new MediaStream([event.track]);
@@ -147,6 +157,38 @@ export const useMeetingSession = () => {
       }
       remoteStreamsRef.current.set(targetSocketId, stream);
       setRemoteStreams(prev => ({ ...prev, [targetSocketId]: stream }));
+    };
+
+    // Automatic renegotiation when tracks change
+    pc.onnegotiationneeded = async () => {
+      // Only the initiator (lower socket ID) sends offers to prevent loops
+      if (!socket || socket.id > targetSocketId) return;
+      if (makingOfferRef.current.has(targetSocketId)) return;
+
+      try {
+        makingOfferRef.current.add(targetSocketId);
+        console.log(`[WebRTC] Renegotiation needed for ${targetSocketId.slice(0, 8)}`);
+        const offer = await pc.createOffer();
+        if (pc.signalingState !== 'stable') return; // Guard stale callback
+        await pc.setLocalDescription(offer);
+        socket.emit('samvaad:webrtc_offer', {
+          offer: pc.localDescription,
+          to: targetSocketId,
+          roomId
+        });
+      } catch (err) {
+        console.warn('[WebRTC] Renegotiation offer error:', err.message);
+      } finally {
+        makingOfferRef.current.delete(targetSocketId);
+      }
+    };
+
+    pc.onconnectionstatechange = () => {
+      console.log(`[WebRTC] Connection state (${targetSocketId.slice(0, 8)}): ${pc.connectionState}`);
+      if (pc.connectionState === 'failed') {
+        console.warn(`[WebRTC] Connection failed for ${targetSocketId.slice(0, 8)}, attempting ICE restart`);
+        pc.restartIce();
+      }
     };
 
     peerConnectionsRef.current.set(targetSocketId, pc);
@@ -214,18 +256,21 @@ export const useMeetingSession = () => {
         localStreamReadyRef.current = true;
         setLocalStream(stream);
         if (videoRef.current) videoRef.current.srcObject = stream;
+        console.log(`[WebRTC] Local media acquired: ${stream.getTracks().map(t => t.kind).join(', ')}`);
 
-        // Propagate tracks to any peer connections created before stream was ready
-        peerConnectionsRef.current.forEach(pc => {
+        // Propagate tracks to any peer connections created before stream was ready.
+        // Adding tracks triggers onnegotiationneeded which handles renegotiation automatically.
+        peerConnectionsRef.current.forEach((pc, sid) => {
           const senders = pc.getSenders();
           stream.getTracks().forEach(track => {
-            const sender = senders.find(s => s.track && s.track.kind === track.kind);
-            if (sender) {
-              sender.replaceTrack(track);
+            const existingSender = senders.find(s => s.track && s.track.kind === track.kind);
+            if (existingSender) {
+              existingSender.replaceTrack(track);
             } else {
               pc.addTrack(track, stream);
             }
           });
+          console.log(`[WebRTC] Tracks propagated to existing PC ${sid.slice(0, 8)}`);
         });
 
         // Now connect to any participants that arrived before the stream was ready
@@ -418,6 +463,11 @@ export const useMeetingSession = () => {
     const handleMeetingEnded = ({ roomId: rId }) => {
       if (rId === roomId) {
         toast.error('The host has ended this meeting.');
+        if (isTranscribingRef.current && recorderRef.current) {
+          try { recorderRef.current.stop(); } catch {}
+          isTranscribingRef.current = false;
+          setIsTranscribing(false);
+        }
         stopAllMediaTracks();
         setShowSummaryScreen(true);
       }
@@ -550,6 +600,8 @@ export const useMeetingSession = () => {
     // Voting
     const handleVoteStarted = ({ vote }) => {
       setVoteState(vote);
+      setVoteResult(null);
+      setVoteIntegrity(null);
       setHasVoted(false);
       setMyVote(null);
       toast('📊 A committee vote has started!', { icon: '📊' });
@@ -575,6 +627,19 @@ export const useMeetingSession = () => {
       toast.error(message);
     };
 
+    const handleVoteIntegrity = (data) => {
+      setVoteIntegrity(data);
+    };
+
+    const handleVoteVerificationResult = (data) => {
+      setVoteIntegrity(data);
+      if (data.verified) {
+        toast.success('Blockchain integrity verified: Ledger hash matches decision.');
+      } else {
+        toast.error(`Integrity check failed: ${data.reason || 'Hash mismatch'}`);
+      }
+    };
+
     socket.on('samvaad:participants_updated', handleParticipantsUpdated);
     socket.on('samvaad:room_state', handleRoomState);
     socket.on('samvaad:meeting_ended', handleMeetingEnded);
@@ -596,6 +661,8 @@ export const useMeetingSession = () => {
     socket.on('samvaad:vote_closed', handleVoteClosed);
     socket.on('samvaad:vote_confirmed', handleVoteConfirmed);
     socket.on('samvaad:vote_error', handleVoteError);
+    socket.on('samvaad:vote_integrity', handleVoteIntegrity);
+    socket.on('samvaad:vote_verification_result', handleVoteVerificationResult);
 
     return () => {
       socket.emit('samvaad:leave_room', { roomId });
@@ -620,6 +687,8 @@ export const useMeetingSession = () => {
       socket.off('samvaad:vote_closed', handleVoteClosed);
       socket.off('samvaad:vote_confirmed', handleVoteConfirmed);
       socket.off('samvaad:vote_error', handleVoteError);
+      socket.off('samvaad:vote_integrity', handleVoteIntegrity);
+      socket.off('samvaad:vote_verification_result', handleVoteVerificationResult);
     };
   }, [socket, roomId, currentUser, navigate, stopAllMediaTracks, pinnedSpeakerId]);
 
@@ -687,11 +756,13 @@ export const useMeetingSession = () => {
   // ================================================================
   const [voteState, setVoteState] = useState(null);
   const [voteResult, setVoteResult] = useState(null);
+  const [voteIntegrity, setVoteIntegrity] = useState(null);
   const [hasVoted, setHasVoted] = useState(false);
   const [myVote, setMyVote] = useState(null);
 
   const startVote = useCallback(({ question, options, isAnonymous }) => {
     if (socket && roomId) {
+      setVoteIntegrity(null);
       socket.emit('samvaad:vote_start', { roomId, question, options, isAnonymous });
     }
   }, [socket, roomId]);
@@ -707,6 +778,12 @@ export const useMeetingSession = () => {
       socket.emit('samvaad:vote_close', { roomId });
     }
   }, [socket, roomId]);
+
+  const verifyVote = useCallback((decisionId) => {
+    if (socket && decisionId) {
+      socket.emit('samvaad:verify_vote', { decisionId });
+    }
+  }, [socket]);
 
   // ================================================================
   // RECORDING (IndexedDB Binary Persistence + Cryptographic SHA-256 Ledger)
@@ -1171,13 +1248,15 @@ export const useMeetingSession = () => {
   // LEAVE / END MEETING
   // ================================================================
   const handleLeaveMeeting = useCallback(() => {
+    stopTranscription();
     stopAllMediaTracks();
     if (socket) socket.emit('samvaad:leave_room', { roomId });
     addAuditLog({ action: 'PARTICIPANT_LEFT', detail: `Left room ${meeting.id}`, meetingId: meeting.id });
     navigate('/');
-  }, [stopAllMediaTracks, socket, roomId, navigate, addAuditLog, meeting.id]);
+  }, [stopTranscription, stopAllMediaTracks, socket, roomId, navigate, addAuditLog, meeting.id]);
 
   const handleEndMeeting = useCallback(async () => {
+    stopTranscription();
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
@@ -1265,8 +1344,8 @@ export const useMeetingSession = () => {
     meetingSettings, updateMeetingSettings,
 
     // Voting
-    voteState, voteResult, hasVoted, myVote,
-    startVote, castVote, closeVote,
+    voteState, voteResult, voteIntegrity, hasVoted, myVote,
+    startVote, castVote, closeVote, verifyVote,
 
     // Recording
     isRecording, recSeconds, isRecPaused,

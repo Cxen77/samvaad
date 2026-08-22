@@ -325,7 +325,7 @@ export const initSamvaadSocket = (io, socket) => {
             isAnonymous: isAnonymous || false,
             votes: [],
             votedUserIds: new Set(),
-            status: 'open',
+            status: 'active',
             startedAt: new Date().toISOString(),
             startedBy: socket.mongoUser?._id?.toString() || socket.id,
             startedByName: socket.mongoUser?.name || 'Host'
@@ -341,7 +341,7 @@ export const initSamvaadSocket = (io, socket) => {
                 question: voteState.question,
                 options: voteState.options,
                 isAnonymous: voteState.isAnonymous,
-                status: 'open',
+                status: 'active',
                 startedAt: voteState.startedAt,
                 startedByName: voteState.startedByName,
                 totalVotes: 0,
@@ -364,14 +364,14 @@ export const initSamvaadSocket = (io, socket) => {
             socket.emit('samvaad:vote_error', { message: 'No active vote found.' });
             return;
         }
-        if (voteState.status !== 'open') {
+        if (voteState.status !== 'active') {
             socket.emit('samvaad:vote_error', { message: 'Voting has closed.' });
             return;
         }
 
-        const odactiveRoomParticipantsuserId = socket.mongoUser?._id?.toString() || socket.id;
+        const voterId = socket.mongoUser?._id?.toString() || socket.id;
 
-        if (voteState.votedUserIds.has(odactiveRoomParticipantsuserId)) {
+        if (voteState.votedUserIds.has(voterId)) {
             socket.emit('samvaad:vote_error', { message: 'You have already voted.' });
             return;
         }
@@ -383,12 +383,12 @@ export const initSamvaadSocket = (io, socket) => {
         }
 
         voteState.votes.push({
-            odactiveRoomParticipantsuserId,
+            voterId,
             userName: socket.mongoUser?.name || 'Member',
             option,
             timestamp: new Date().toISOString()
         });
-        voteState.votedUserIds.add(odactiveRoomParticipantsuserId);
+        voteState.votedUserIds.add(voterId);
 
         // Broadcast vote progress
         const totalEligible = getRoomParticipantsArray(roomId).length;
@@ -425,15 +425,23 @@ export const initSamvaadSocket = (io, socket) => {
         }));
 
         const totalVotes = voteState.votes.length;
+        const totalEligible = getRoomParticipantsArray(roomId).length;
         const winner = results.reduce((a, b) => a.count > b.count ? a : b, { count: 0 });
+
+        // Add percentage to breakdown
+        const breakdown = results.map(r => ({
+            ...r,
+            percentage: totalVotes > 0 ? Math.round((r.count / totalVotes) * 100) : 0
+        }));
 
         const finalResult = {
             id: voteState.id,
             question: voteState.question,
             options: voteState.options,
             results,
+            breakdown,
             totalVotes,
-            totalEligible: getRoomParticipantsArray(roomId).length,
+            totalEligible,
             decision: winner.option,
             decisionCount: winner.count,
             isAnonymous: voteState.isAnonymous,
@@ -477,7 +485,7 @@ export const initSamvaadSocket = (io, socket) => {
                 meetingId: roomId,
                 question: voteState.question,
                 options: voteState.options,
-                votes: voteState.isAnonymous ? [] : voteState.votes,
+                votes: voteState.isAnonymous ? [] : voteState.votes.map(v => ({ userId: v.voterId, userName: v.userName, option: v.option, timestamp: v.timestamp })),
                 eligibleVoters: totalEligible,
                 totalVotes,
                 finalResult: winner.option,
@@ -504,6 +512,15 @@ export const initSamvaadSocket = (io, socket) => {
             decision.blockchainTxId = evidenceResult.evidenceId;
             await decision.save();
 
+            // Send integrity proof back to participants
+            io.to(roomId).emit('samvaad:vote_integrity', {
+                decisionId,
+                sha256Hash,
+                evidenceId: evidenceResult.evidenceId,
+                blockIndex: evidenceResult.blockIndex,
+                verified: true
+            });
+
             await logEvent({
                 eventType: 'VOTE_CLOSED',
                 meetingId: roomId,
@@ -512,6 +529,41 @@ export const initSamvaadSocket = (io, socket) => {
             });
         } catch (persistErr) {
             console.warn('[Samvaad Socket] Decision persistence error:', persistErr.message);
+        }
+    });
+
+    // Vote integrity verification
+    socket.on('samvaad:verify_vote', async ({ decisionId }) => {
+        if (!decisionId) return;
+        try {
+            const decision = await Decision.findOne({ decisionId }).lean();
+            if (!decision) {
+                socket.emit('samvaad:vote_verification_result', { verified: false, reason: 'Decision not found' });
+                return;
+            }
+
+            // Reconstruct canonical data and re-hash
+            const decisionData = JSON.stringify({
+                decisionId: decision.decisionId,
+                meetingId: decision.meetingId,
+                question: decision.question,
+                finalResult: decision.finalResult,
+                totalVotes: decision.totalVotes,
+                closedAt: decision.closedAt,
+            });
+            const recomputedHash = crypto.createHash('sha256').update(decisionData).digest('hex');
+            const hashMatch = recomputedHash === decision.sha256Hash;
+
+            socket.emit('samvaad:vote_verification_result', {
+                verified: hashMatch,
+                decisionId: decision.decisionId,
+                sha256Hash: decision.sha256Hash,
+                recomputedHash,
+                blockchainTxId: decision.blockchainTxId,
+                reason: hashMatch ? 'Integrity verified — hash matches blockchain anchor' : 'INTEGRITY FAILURE — hash mismatch detected'
+            });
+        } catch (err) {
+            socket.emit('samvaad:vote_verification_result', { verified: false, reason: err.message });
         }
     });
 

@@ -28,8 +28,7 @@ const decisionSchema = new mongoose.Schema({
     type: String,
   }],
   votes: [{
-    odactiveRoomParticipantsuserId: String,
-    odactiveRoomParticipantsuserId: String,
+    userId: String,
     userName: String,
     option: String,
     timestamp: Date,
