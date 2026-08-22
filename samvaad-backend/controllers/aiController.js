@@ -1,25 +1,14 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
-
-const SUMMARY_PROMPT = `You are an AI meeting assistant for AICTE Samvaad, an Indian government education regulatory body's official meeting platform.
-
-Analyze the following meeting transcript and provide a structured summary in this exact JSON format:
-{
-  "summary": "A concise 2-3 paragraph summary of the meeting discussion",
-  "keyDecisions": ["Decision 1", "Decision 2"],
-  "actionItems": [
-    { "task": "Task description", "assignee": "Person name or 'Unassigned'", "deadline": "If mentioned, otherwise 'TBD'" }
-  ],
-  "nextSteps": ["Next step 1", "Next step 2"],
-  "participants": ["Name 1", "Name 2"]
-}
-
-Rules:
-- Be factual and concise. Do not invent information not present in the transcript.
-- If the transcript is very short or unclear, still provide your best summary.
-- Return ONLY valid JSON, no markdown fences.
-
-TRANSCRIPT:
-`;
+/**
+ * AI Controller — Meeting Summary Generation
+ * 
+ * Uses local SmolLM2-135M-Instruct model (lazy-loaded).
+ * The Deepgram transcription pipeline is NOT touched by this controller.
+ * This controller ONLY handles post-transcription summarization.
+ */
+import crypto from 'crypto';
+import { summarizeWithLocalModel, isModelLoading } from '../services/localSummarizerService.js';
+import { encryptMessage } from '../services/encryptionService.js';
+import { anchorEvidence } from '../services/blockchainService.js';
 
 export const summarizeTranscript = async (req, res) => {
   try {
@@ -29,43 +18,44 @@ export const summarizeTranscript = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Transcript text is required (min 10 characters).' });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return res.status(503).json({ 
-        success: false, 
-        message: 'AI Summary is not configured. Add GEMINI_API_KEY to the server environment.' 
-      });
+    // Notify client that model may need loading
+    if (isModelLoading()) {
+      console.log('[AI Controller] Model is currently loading, waiting...');
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    // Generate summary using local model
+    const parsed = await summarizeWithLocalModel(transcript);
 
-    const result = await model.generateContent(SUMMARY_PROMPT + transcript);
-    const responseText = result.response.text();
+    // Generate SHA-256 hash of the summary for integrity verification
+    const summaryText = JSON.stringify(parsed);
+    const summaryHash = crypto.createHash('sha256').update(summaryText).digest('hex');
 
-    // Parse the JSON response
-    let parsed;
+    // Anchor summary hash to local blockchain/integrity ledger
     try {
-      // Strip markdown fences if present
-      const cleaned = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-      parsed = JSON.parse(cleaned);
-    } catch {
-      // If JSON parse fails, return raw text as summary
-      parsed = {
-        summary: responseText,
-        keyDecisions: [],
-        actionItems: [],
-        nextSteps: [],
-        participants: []
-      };
+      await anchorEvidence({
+        evidenceHash: summaryHash,
+        evidenceType: 'meeting_summary',
+        referenceId: `summary-${Date.now()}`,
+        meetingId: req.body.meetingId || null,
+        eventType: 'SUMMARY_GENERATED',
+        metadata: {
+          summaryHash,
+          generatedAt: new Date().toISOString(),
+          model: 'SmolLM2-135M-Instruct',
+          transcriptLength: transcript.length,
+        }
+      });
+    } catch (anchorErr) {
+      // Non-fatal: summary still works even if anchoring fails
+      console.warn('[AI Controller] Summary anchoring failed (non-fatal):', anchorErr.message);
     }
 
-    return res.json({ success: true, data: parsed });
+    return res.json({ success: true, data: parsed, integrity: { summaryHash } });
   } catch (error) {
     console.error('AI Summary error:', error.message);
     return res.status(500).json({ 
       success: false, 
-      message: 'Failed to generate AI summary. Please try again.' 
+      message: 'Unable to generate summary. Please try again.' 
     });
   }
 };

@@ -10,7 +10,7 @@ const evidenceSchema = new mongoose.Schema({
   evidenceType: {
     type: String,
     required: true,
-    enum: ['recording', 'document', 'decision', 'audit_root', 'meeting_seal'],
+    enum: ['recording', 'document', 'decision', 'audit_root', 'meeting_seal', 'meeting_summary'],
     index: true,
   },
   referenceId: {
